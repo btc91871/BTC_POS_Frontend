@@ -1,0 +1,148 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.dropdown {
+  padding: 10px;
+}
+
+select {
+  padding: 10px 15px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  color: #333;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.3s ease;
+  min-width: 200px;
+  appearance: none; /* Removes default arrow in some browsers */
+  -webkit-appearance: none; /* For Safari */
+  -moz-appearance: none; /* For Firefox */
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23333%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px auto;
+}
+
+select:hover {
+  border-color: #888;
+}
+
+select:focus {
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+select option {
+  padding: 10px;
+  background-color: white;
+  color: #333;
+}
+
+select option.dropdown {
+  color: #999;
+  font-style: italic;
+}
+
+/* For Firefox to style the dropdown arrow */
+@-moz-document url-prefix() {
+  select {
+    padding-right: 25px;
+  }
+}
+
+.parent {
+  display: flex;
+}
+
+.fileInput {
+  margin-top: 20px;
+}
+
+.loading-overlay {
+  margin-top: 20px;
+  color: #444;
+  font-weight: bold;
+}
+input[type="file"] {
+  display: inline-block;
+  padding: 10px 15px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #333;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: 100%;
+  max-width: 300px;
+  margin-top: 15px;
+}
+
+input[type="file"]:hover:not(:disabled) {
+  background-color: #eaeaea;
+}
+
+input[type="file"]:disabled {
+  background-color: #eee;
+  color: #888;
+  cursor: not-allowed;
+  border-color: #ddd;
+}
+
+.container {
+  max-width: 100%;
+  /* margin: 50px auto; */
+  padding: 10px;
+  /* text-align: center; */
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* Semi-transparent overlay */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Ensure it appears above other elements */
+}
+
+.loading-overlay p {
+  color: white;
+  margin-top: 10px;
+  font-size: 16px;
+}
+.twoButton {
+  padding: 50px;
+}
+
+.twoButton {
+  margin: 10px;
+  padding: 10px 20px;
+  background-color: #1787ff;
+  border: 2px solid #0071ea;
+  color: white;
+  /* border: none; */
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.twoButton:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+select,
+input[type="file"] {
+  margin: 10px;
+  padding: 5px;
+}

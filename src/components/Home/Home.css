@@ -1,0 +1,96 @@
+/* Reset and global styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.main-content {
+  flex-grow: 1;
+  background-color: #faf9f8;
+  min-height: 100vh; /* Ensure it takes full height */
+}
+
+/* Image container styles */
+.image-container {
+  position: relative;
+  background-image: url("../../assets/images/defaultCompanyBanner.jpg");
+  background-size: cover;
+  background-position: center;
+  height: 210px;
+  display: flex;
+  justify-content: left;
+  align-items: center;
+}
+
+.overlay-text {
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  padding-left: 40px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* First Row styles */
+.firstRow {
+  margin-top: 10px;
+}
+
+.firstRow .heading {
+  font-weight: 500;
+  font-size: 14px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  color: #6b6a6a;
+  margin-left: 16px; /* Replaced ms-4 (4 * 4px) */
+}
+
+.firstRow .box-container {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 0 16px; /* Replaced px-4 (4 * 4px) */
+  gap: 20px; /* Add some spacing between boxes */
+}
+
+.box {
+  background-color: white;
+  width: 310px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  border-radius: 10px;
+  align-items: center;
+  padding: 12px; /* Replaced p-3 (3 * 4px) */
+}
+
+.box p {
+  margin-left: 10px;
+  font-size: 14px;
+  color: #414141;
+}
+
+/* Second Row styles */
+.secondRow {
+  margin-top: 20px; /* Replaced mt-5 (5 * 4px) */
+}
+
+.secondRow .heading {
+  font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 15px;
+  color: #6b6a6a;
+  margin-left: 16px;
+}
+
+.workSpaceBox {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 0 16px; /* Replaced px-4 (4 * 4px) */
+  row-gap: 20px; /* Vertical spacing between rows */
+}
+
+.diff {
+  margin: 0;
+  margin-left: 10px;
+}

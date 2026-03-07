@@ -1,0 +1,41 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.layout {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  position: fixed;
+  grid:
+    "header header header" auto
+    "leftSide body body" 1fr
+    / 250px 1fr; /* Fixed sidebar width, body takes remaining space */
+  gap: 0; /* Remove gap for tighter layout */
+}
+
+.header {
+  grid-area: header;
+  background-color: #1a2a44; /* Match your navbar color from screenshot */
+  /* padding: 10px; */
+  color: white;
+}
+
+.leftSide {
+  grid-area: leftSide;
+  background-color: #f8f9fa;
+  overflow-y: auto;
+  height: calc(100vh - 60px); /* Adjust based on header height */
+}
+
+.body {
+  grid-area: body;
+  /* padding: 20px; */
+  overflow-y: auto;
+  background-color: #fff; /* Match your body background */
+}
+.body::-webkit-scrollbar {
+  display: none;
+}
