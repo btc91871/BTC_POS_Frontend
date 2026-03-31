@@ -3,15 +3,15 @@ import "./enum.css";
 
 
 interface EnumRecord {
-    enumname: string;
-    membername: string;
-    value: number;
+    ENUMNAME: string;
+    MEMBERNAME: string;
+    VALUE: number;
     dataAreaId: string;
 }
 const LOGGED_IN_USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
 const AUTH_TOKEN = "fake-token-for-now";
 const DATA_AREA_ID = "DAT";
-const API_BASE_URL = "http://192.168.0.100"; // 🔁 your port
+const API_BASE_URL = "http://192.168.0.102"; // 🔁 your port
 
 const EnumsPage: React.FC = () => {
 
@@ -49,15 +49,15 @@ const EnumsPage: React.FC = () => {
         if (!filterText.trim()) return source;
         const q = filterText.toLowerCase();
         return source.filter(r =>
-            r.enumname.toLowerCase().includes(q) ||
-            r.membername.toLowerCase().includes(q) ||
-            String(r.value).includes(q)
+            r.ENUMNAME.toLowerCase().includes(q) ||
+            r.MEMBERNAME.toLowerCase().includes(q) ||
+            String(r.VALUE).includes(q)
         );
     }, [records, editedRecords, isEditMode, filterText]);
 
     const addRow = (): void => {
         if (newRow) return;
-        setNewRow({ enumname: "", membername: "", value: 0, dataAreaId: "" });
+        setNewRow({ ENUMNAME: "", MEMBERNAME: "", VALUE: 0, dataAreaId: "" });
         setIsEditMode(false);
         setErrorMsg("");
     };
@@ -66,22 +66,22 @@ const EnumsPage: React.FC = () => {
         if (!newRow) return;
         setNewRow({
             ...newRow,
-            [field]: field === "value" ? Number(value) : value,
+            [field]: field === "VALUE" ? Number(value) : value,
         });
         setErrorMsg("");
     };
 
     const handleSave = async (): Promise<void> => {
-        if (!newRow?.enumname.trim()) { setErrorMsg("Enum name is required."); return; }
-        if (!newRow?.membername.trim()) { setErrorMsg("Member name is required."); return; }
+        if (!newRow?.ENUMNAME.trim()) { setErrorMsg("Enum name is required."); return; }
+        if (!newRow?.MEMBERNAME.trim()) { setErrorMsg("Member name is required."); return; }
 
         setLoading(true);
         setErrorMsg("");
 
         const payload: EnumRecord = {
-            enumname: newRow.enumname,
-            membername: newRow.membername,
-            value: newRow.value,
+            ENUMNAME: newRow.ENUMNAME,
+            MEMBERNAME: newRow.MEMBERNAME,
+            VALUE: newRow.VALUE,
             dataAreaId: newRow.dataAreaId
         };
 
@@ -102,7 +102,7 @@ const EnumsPage: React.FC = () => {
 
             setRecords(prev => Array.isArray(prev) ? [...prev, newRow] : [newRow]);
             setNewRow(null);
-            showSuccess(`Enum "${newRow.enumname}" saved.`);
+            showSuccess(`Enum "${newRow.ENUMNAME}" saved.`);
 
         } catch (err) {
             setErrorMsg(err instanceof Error ? err.message : "Failed to save.");
@@ -134,7 +134,7 @@ const EnumsPage: React.FC = () => {
         const updated = [...editedRecords];
         updated[index] = {
             ...updated[index],
-            [field]: field === "value" ? Number(value) : value,
+            [field]: field === "VALUE" ? Number(value) : value,
         };
         setEditedRecords(updated);
     };
@@ -160,7 +160,7 @@ const EnumsPage: React.FC = () => {
                 });
                 if (!res.ok) {
                     const e = await res.json().catch(() => ({}));
-                    throw new Error(e.message || `Failed to update "${row.enumname}"`);
+                    throw new Error(e.message || `Failed to update "${row.ENUMNAME}"`);
                 }
             }
 
@@ -183,7 +183,7 @@ const EnumsPage: React.FC = () => {
 
 
     const handleDelete = async (row: EnumRecord, index: number): Promise<void> => {
-        if (!window.confirm(`Delete "${row.enumname} - ${row.membername}"?`)) return;
+        if (!window.confirm(`Delete "${row.ENUMNAME} - ${row.MEMBERNAME}"?`)) return;
 
         setLoading(true);
         setErrorMsg("");
@@ -200,11 +200,11 @@ const EnumsPage: React.FC = () => {
 
             if (!res.ok) {
                 const e = await res.json().catch(() => ({}));
-                throw new Error(e.message || `Failed to delete "${row.enumname}"`);
+                throw new Error(e.message || `Failed to delete "${row.ENUMNAME}"`);
             }
 
             setRecords(prev => prev.filter((_, i) => i !== index));
-            showSuccess(`Enum "${row.enumname}" deleted.`);
+            showSuccess(`Enum "${row.ENUMNAME}" deleted.`);
 
         } catch (err) {
             setErrorMsg(err instanceof Error ? err.message : "Failed to delete.");
@@ -306,23 +306,23 @@ const EnumsPage: React.FC = () => {
                                 <tr className="tr newRow">
                                     <td className="td">
                                         <input
-                                            value={newRow.enumname}
-                                            onChange={e => handleNewRowChange("enumname", e.target.value)}
+                                            value={newRow.ENUMNAME}
+                                            onChange={e => handleNewRowChange("ENUMNAME", e.target.value)}
                                             placeholder="Enum name *"
                                         />
                                     </td>
                                     <td className="td">
                                         <input
-                                            value={newRow.membername}
-                                            onChange={e => handleNewRowChange("membername", e.target.value)}
+                                            value={newRow.MEMBERNAME}
+                                            onChange={e => handleNewRowChange("MEMBERNAME", e.target.value)}
                                             placeholder="Member name *"
                                         />
                                     </td>
                                     <td className="td">
                                         <input
                                             type="number"
-                                            value={newRow.value}
-                                            onChange={e => handleNewRowChange("value", e.target.value)}
+                                            value={newRow.VALUE}
+                                            onChange={e => handleNewRowChange("VALUE", e.target.value)}
                                         />
                                     </td>
 
@@ -342,21 +342,21 @@ const EnumsPage: React.FC = () => {
                                     <tr key={index} className="tr editableRow">
                                         <td className="td">
                                             <input
-                                                value={editedRecords[index]?.enumname ?? ""}
-                                                onChange={e => handleEditRowChange(index, "enumname", e.target.value)}
+                                                value={editedRecords[index]?.ENUMNAME ?? ""}
+                                                onChange={e => handleEditRowChange(index, "ENUMNAME", e.target.value)}
                                             />
                                         </td>
                                         <td className="td">
                                             <input
-                                                value={editedRecords[index]?.membername ?? ""}
-                                                onChange={e => handleEditRowChange(index, "membername", e.target.value)}
+                                                value={editedRecords[index]?.MEMBERNAME ?? ""}
+                                                onChange={e => handleEditRowChange(index, "MEMBERNAME", e.target.value)}
                                             />
                                         </td>
                                         <td className="td">
                                             <input
                                                 type="number"
-                                                value={editedRecords[index]?.value ?? 0}
-                                                onChange={e => handleEditRowChange(index, "value", e.target.value)}
+                                                value={editedRecords[index]?.VALUE ?? 0}
+                                                onChange={e => handleEditRowChange(index, "VALUE", e.target.value)}
                                             />
                                         </td>
 
@@ -364,9 +364,9 @@ const EnumsPage: React.FC = () => {
                                 ) : (
                                     // Read-only — plain text
                                     <tr key={index} className="tr">
-                                        <td className="td">{row.enumname}</td>
-                                        <td className="td">{row.membername}</td>
-                                        <td className="td">{row.value}</td>
+                                        <td className="td">{row.ENUMNAME}</td>
+                                        <td className="td">{row.MEMBERNAME}</td>
+                                        <td className="td">{row.VALUE}</td>
                                         {/* <td className="td">{row.dataAreaId}</td> */}
                                         <td className="td">
                                             <button

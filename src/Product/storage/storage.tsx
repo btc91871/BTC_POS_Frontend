@@ -13,7 +13,7 @@ interface StorageDimGroupRecord {
 // AUTH — auto from login
 // ──────────────────────────────────────────────
 const LOGGED_IN_USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
-const API_BASE_URL = "http://192.168.0.104";
+const API_BASE_URL = "http://192.168.0.102";
 
 const EMPTY: StorageDimGroupRecord = {
     storagedimgroupname: "",
