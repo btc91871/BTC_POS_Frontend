@@ -1,0 +1,674 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* ══ SHELL ══ */
+.s-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    color: #323130;
+    background: #f3f2f1;
+}
+
+/* ══ COMMAND BAR ══ */
+.s-commandBar {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border-bottom: 1px solid #edebe9;
+    padding: 0 4px;
+    height: 44px;
+    flex-shrink: 0;
+    overflow-x: auto;
+    gap: 0;
+}
+
+.s-cmd-icon-btn {
+    background: none;
+    border: none;
+    font-size: 15px;
+    cursor: pointer;
+    color: #323130;
+    padding: 8px 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.s-cmd-icon-btn:hover {
+    background: #f3f2f1;
+}
+
+.s-cmd-hamburger {
+    background: #0078d4;
+    color: #ffffff;
+    border-radius: 3px;
+    margin-right: 4px;
+}
+
+.s-cmd-hamburger:hover {
+    background: #006abe;
+}
+
+.s-cmd-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.s-cmd-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #323130;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.s-cmd-btn:hover:not(:disabled) {
+    background: #f3f2f1;
+}
+
+.s-cmd-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.s-cmd-save {
+    color: #0078d4;
+    font-weight: 600;
+}
+
+.s-cmd-divider {
+    width: 1px;
+    height: 24px;
+    background: #edebe9;
+    margin: 0 4px;
+    flex-shrink: 0;
+}
+
+.s-cmd-tab {
+    padding: 0 14px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    cursor: pointer;
+    color: #605e5c;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    flex-shrink: 0;
+}
+
+.s-cmd-tab-active {
+    font-weight: 600;
+    color: #323130;
+    border-bottom: 2px solid #0078d4;
+}
+
+.s-cmd-right {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* ══ BODY ══ */
+.s-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* ══ SIDEBAR ══ */
+.s-sidebar {
+    width: 260px;
+    min-width: 200px;
+    background: #ffffff;
+    border-right: 1px solid #edebe9;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.s-sidebar-filter {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid #edebe9;
+    gap: 6px;
+}
+
+.s-filter-icon {
+    color: #a19f9d;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.s-filter-input {
+    border: 1px solid #c8c6c4;
+    border-radius: 3px;
+    padding: 5px 8px;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    width: 100%;
+    outline: none;
+    color: #323130;
+}
+
+.s-filter-input:focus {
+    border-color: #0078d4;
+}
+
+.s-sidebar-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.s-sidebar-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f2f1;
+}
+
+.s-sidebar-item:hover {
+    background: #f3f2f1;
+}
+
+.s-sidebar-item-active {
+    background: #deecf9 !important;
+    border-left: 3px solid #0078d4;
+    padding-left: 13px;
+}
+
+.s-item-code {
+    font-size: 14px;
+    font-weight: 600;
+    color: #323130;
+}
+
+.s-item-desc {
+    font-size: 12px;
+    color: #605e5c;
+    margin-top: 1px;
+}
+
+.s-loading {
+    padding: 16px;
+    color: #605e5c;
+    font-size: 13px;
+}
+
+/* ══ DETAIL PANEL ══ */
+.s-detail {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 28px 28px;
+    background: #f3f2f1;
+}
+
+.s-std-view {
+    font-size: 13px;
+    color: #605e5c;
+    margin-bottom: 2px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.s-std-view:hover {
+    color: #0078d4;
+}
+
+.s-detail-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #323130;
+    margin-bottom: 14px;
+}
+
+/* ── Banners ── */
+.s-successBar {
+    background: #dff6dd;
+    color: #107c10;
+    border: 1px solid #92d050;
+    border-radius: 3px;
+    padding: 7px 12px;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+.s-errorBar {
+    background: #fde7e9;
+    color: #a4262c;
+    border: 1px solid #f1707b;
+    border-radius: 3px;
+    padding: 7px 12px;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+/* ── Header card ── */
+.s-header-card {
+    background: #ffffff;
+    border: 1px solid #edebe9;
+    border-radius: 3px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.s-header-fields {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.s-header-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+/* ── Field groups ── */
+.s-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.s-field-label {
+    font-size: 12px;
+    color: #605e5c;
+}
+
+.s-field-input {
+    border: 1px solid #c8c6c4;
+    border-radius: 2px;
+    padding: 5px 8px;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #323130;
+    background: #ffffff;
+    outline: none;
+    min-width: 100px;
+}
+
+.s-field-input:focus {
+    border-color: #0078d4;
+}
+
+.s-field-input:disabled {
+    background: #f3f2f1;
+    border-color: #e0dfdd;
+    color: #323130;
+    cursor: default;
+}
+
+/* Blue border when active (selected fields like in screenshot) */
+.s-field-input.s-active {
+    border-color: #0078d4;
+}
+
+.s-field-short {
+    width: 90px;
+}
+
+.s-field-wide {
+    width: 200px;
+}
+
+.s-field-guid {
+    width: 300px;
+    font-size: 12px;
+    color: #605e5c;
+}
+
+.s-field-select {
+    border: 1px solid #c8c6c4;
+    border-radius: 2px;
+    padding: 5px 8px;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #323130;
+    background: #ffffff;
+    outline: none;
+    width: 100%;
+    cursor: pointer;
+}
+
+.s-field-select:focus {
+    border-color: #0078d4;
+}
+
+.s-field-select:disabled {
+    background: #f3f2f1;
+    border-color: #e0dfdd;
+    cursor: default;
+}
+
+/* ── Buttons ── */
+.s-btn-primary {
+    background: #0078d4;
+    color: #ffffff;
+    border: 1px solid #0078d4;
+    border-radius: 3px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    cursor: pointer;
+}
+
+.s-btn-primary:hover {
+    background: #006abe;
+}
+
+.s-btn-secondary {
+    background: #ffffff;
+    color: #323130;
+    border: 1px solid #c8c6c4;
+    border-radius: 3px;
+    padding: 5px 14px;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    cursor: pointer;
+}
+
+.s-btn-secondary:hover:not(:disabled) {
+    background: #f3f2f1;
+}
+
+.s-btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ══ SECTIONS ══ */
+.s-section {
+    background: #ffffff;
+    border: 1px solid #edebe9;
+    border-radius: 3px;
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.s-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: 600;
+    color: #323130;
+    padding: 10px 16px;
+    border-bottom: 1px solid #edebe9;
+    cursor: pointer;
+    background: #ffffff;
+    user-select: none;
+}
+
+.s-section-header:hover {
+    background: #faf9f8;
+}
+
+.s-section-chevron {
+    font-size: 12px;
+    color: #605e5c;
+}
+
+.s-section-body {
+    padding: 16px;
+}
+
+.s-general-grid {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+/* ══ ADDRESSES ══ */
+.s-addresses-body {
+    padding: 12px 16px 16px;
+}
+
+.s-addr-toolbar {
+    margin-bottom: 10px;
+    display: flex;
+    gap: 8px;
+}
+
+.s-addr-add-btn {
+    background: none;
+    border: none;
+    color: #0078d4;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    cursor: pointer;
+    padding: 4px 0;
+    font-weight: 500;
+}
+
+.s-addr-add-btn:hover {
+    text-decoration: underline;
+}
+
+.s-addr-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.s-addr-table thead tr {
+    border-bottom: 1.5px solid #edebe9;
+}
+
+.s-addr-table th {
+    text-align: left;
+    padding: 7px 10px;
+    font-weight: 600;
+    color: #605e5c;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.s-addr-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #f3f2f1;
+    color: #323130;
+}
+
+.s-addr-row-editable {
+    cursor: pointer;
+}
+
+.s-addr-row-editable:hover td {
+    background: #f3f9fd;
+}
+
+.s-addr-del-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #a4262c;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.s-addr-del-btn:hover {
+    background: #fde7e9;
+}
+
+/* Empty state */
+.s-addr-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px;
+    gap: 12px;
+}
+
+.s-addr-empty-icon {
+    opacity: 0.5;
+}
+
+.s-addr-empty-text {
+    color: #a19f9d;
+    font-size: 13px;
+}
+
+/* Badge */
+.s-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.s-badge-yes {
+    background: #dff6dd;
+    color: #107c10;
+}
+
+.s-badge-no {
+    background: #f3f2f1;
+    color: #605e5c;
+}
+
+/* ══ TOGGLE ══ */
+.s-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.s-toggle {
+    position: relative;
+    width: 40px;
+    height: 20px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+
+.s-toggle-off {
+    background: #c8c6c4;
+}
+
+.s-toggle-on {
+    background: #0078d4;
+}
+
+.s-toggle:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.s-toggle-thumb {
+    position: absolute;
+    top: 3px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ffffff;
+    transition: left 0.2s;
+}
+
+.s-toggle-off .s-toggle-thumb {
+    left: 3px;
+}
+
+.s-toggle-on .s-toggle-thumb {
+    left: 23px;
+}
+
+.s-toggle-label {
+    font-size: 13px;
+    color: #323130;
+}
+
+/* ══ ADDRESS MODAL ══ */
+.s-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.s-modal {
+    background: #ffffff;
+    border-radius: 4px;
+    width: 540px;
+    max-width: 96vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.s-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid #edebe9;
+    font-size: 15px;
+    font-weight: 600;
+    color: #323130;
+    flex-shrink: 0;
+}
+
+.s-modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #605e5c;
+    padding: 2px 6px;
+    border-radius: 3px;
+    line-height: 1;
+}
+
+.s-modal-close:hover {
+    background: #f3f2f1;
+}
+
+.s-modal-body {
+    padding: 16px 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.s-modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.s-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid #edebe9;
+    flex-shrink: 0;
+}

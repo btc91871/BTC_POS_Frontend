@@ -1,0 +1,446 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* ══ SHELL ══ */
+.sdg-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    color: #323130;
+    background: #f3f2f1;
+}
+
+/* ══ COMMAND BAR ══ */
+.sdg-commandBar {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border-bottom: 1px solid #edebe9;
+    padding: 0 4px;
+    height: 44px;
+    flex-shrink: 0;
+    overflow-x: auto;
+}
+
+.sdg-cmd-icon-btn {
+    background: none;
+    border: none;
+    font-size: 15px;
+    cursor: pointer;
+    color: #323130;
+    padding: 8px 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.sdg-cmd-icon-btn:hover {
+    background: #f3f2f1;
+}
+
+.sdg-hamburger {
+    background: #0078d4;
+    color: #ffffff;
+    border-radius: 3px;
+    margin-right: 4px;
+}
+
+.sdg-hamburger:hover {
+    background: #006abe;
+}
+
+.sdg-cmd-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.sdg-cmd-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #323130;
+    cursor: pointer;
+    padding: 6px 14px;
+    border-radius: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.sdg-cmd-btn:hover:not(:disabled) {
+    background: #f3f2f1;
+}
+
+.sdg-cmd-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.sdg-cmd-save {
+    color: #0078d4;
+    font-weight: 600;
+}
+
+.sdg-cmd-divider {
+    width: 1px;
+    height: 24px;
+    background: #edebe9;
+    margin: 0 4px;
+    flex-shrink: 0;
+}
+
+.sdg-cmd-tabs {
+    display: flex;
+    align-items: center;
+}
+
+.sdg-cmd-tab {
+    padding: 0 16px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    cursor: pointer;
+    color: #605e5c;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    flex-shrink: 0;
+}
+
+.sdg-cmd-tab:hover {
+    color: #323130;
+    background: #f3f2f1;
+}
+
+.sdg-cmd-tab-active {
+    font-weight: 600;
+    color: #323130;
+    border-bottom: 2px solid #0078d4;
+}
+
+.sdg-cmd-right {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* ══ BODY ══ */
+.sdg-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* ══ SIDEBAR ══ */
+.sdg-sidebar {
+    width: 260px;
+    min-width: 200px;
+    background: #ffffff;
+    border-right: 1px solid #edebe9;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.sdg-sidebar-filter {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid #edebe9;
+    gap: 6px;
+}
+
+.sdg-filter-icon {
+    color: #a19f9d;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.sdg-filter-input {
+    border: 1px solid #c8c6c4;
+    border-radius: 3px;
+    padding: 5px 8px;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    width: 100%;
+    outline: none;
+    color: #323130;
+}
+
+.sdg-filter-input:focus {
+    border-color: #0078d4;
+}
+
+.sdg-sidebar-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.sdg-sidebar-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f2f1;
+}
+
+.sdg-sidebar-item:hover {
+    background: #f3f2f1;
+}
+
+.sdg-sidebar-item-active {
+    background: #deecf9 !important;
+    border-left: 3px solid #0078d4;
+    padding-left: 13px;
+}
+
+.sdg-item-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #323130;
+}
+
+.sdg-item-desc {
+    font-size: 12px;
+    color: #605e5c;
+    margin-top: 1px;
+}
+
+.sdg-loading {
+    padding: 16px;
+    color: #605e5c;
+    font-size: 13px;
+}
+
+/* ══ DETAIL PANEL ══ */
+.sdg-detail {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 28px 28px;
+    background: #f3f2f1;
+}
+
+.sdg-std-view {
+    font-size: 13px;
+    color: #605e5c;
+    margin-bottom: 2px;
+    cursor: pointer;
+}
+
+.sdg-std-view:hover {
+    color: #0078d4;
+}
+
+.sdg-detail-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #323130;
+    margin-bottom: 14px;
+}
+
+/* ── Banners ── */
+.sdg-successBar {
+    background: #dff6dd;
+    color: #107c10;
+    border: 1px solid #92d050;
+    border-radius: 3px;
+    padding: 7px 12px;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+.sdg-errorBar {
+    background: #fde7e9;
+    color: #a4262c;
+    border: 1px solid #f1707b;
+    border-radius: 3px;
+    padding: 7px 12px;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+/* ── Header card ── */
+.sdg-header-card {
+    background: #ffffff;
+    border: 1px solid #edebe9;
+    border-radius: 3px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+}
+
+.sdg-header-fields {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.sdg-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sdg-field-group-wide {
+    flex: 1;
+    min-width: 200px;
+}
+
+.sdg-field-label {
+    font-size: 12px;
+    color: #605e5c;
+}
+
+.sdg-field-input {
+    border: 1px solid #c8c6c4;
+    border-radius: 2px;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #323130;
+    background: #f3f2f1;
+    outline: none;
+    min-width: 80px;
+}
+
+.sdg-field-input:focus {
+    border-color: #0078d4;
+    background: #ffffff;
+}
+
+.sdg-field-input:disabled {
+    background: #f3f2f1;
+    border-color: #e0dfdd;
+    color: #323130;
+    cursor: default;
+}
+
+/* Active (editable) inputs get white background */
+.sdg-field-input.sdg-active {
+    background: #ffffff;
+    border-color: #c8c6c4;
+}
+
+.sdg-field-input.sdg-active:focus {
+    border-color: #0078d4;
+}
+
+.sdg-field-short {
+    width: 120px;
+}
+
+.sdg-field-wide {
+    width: 100%;
+}
+
+.sdg-field-guid {
+    width: 280px;
+    font-size: 11px;
+    color: #605e5c;
+}
+
+/* ── Edit button — matches screenshot "— Edit" style ── */
+.sdg-btn-edit {
+    background: #ffffff;
+    color: #323130;
+    border: 1px solid #c8c6c4;
+    border-radius: 3px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sdg-btn-edit:hover {
+    background: #f3f2f1;
+}
+
+.sdg-btn-secondary {
+    background: #ffffff;
+    color: #323130;
+    border: 1px solid #c8c6c4;
+    border-radius: 3px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    cursor: pointer;
+}
+
+.sdg-btn-secondary:hover:not(:disabled) {
+    background: #f3f2f1;
+}
+
+.sdg-btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.sdg-header-actions {
+    display: flex;
+    align-items: flex-end;
+    margin-left: auto;
+}
+
+/* ══ GENERAL SECTION ══ */
+.sdg-section {
+    background: #ffffff;
+    border: 1px solid #edebe9;
+    border-radius: 3px;
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.sdg-section-header {
+    font-size: 14px;
+    font-weight: 600;
+    color: #323130;
+    padding: 10px 16px;
+    border-bottom: 1px solid #edebe9;
+    background: #ffffff;
+}
+
+.sdg-section-body {
+    padding: 20px 16px;
+}
+
+.sdg-general-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border-top: 1px solid #edebe9;
+    padding-top: 16px;
+}
+
+.sdg-gen-col {
+    padding: 0 32px 0 0;
+    border-right: 1px solid #edebe9;
+    margin-right: 32px;
+}
+
+.sdg-gen-col:last-child {
+    border-right: none;
+    margin-right: 0;
+    padding-right: 0;
+}
+
+.sdg-gen-col-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #323130;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+}
+
+.sdg-mt {
+    margin-top: 14px;
+}

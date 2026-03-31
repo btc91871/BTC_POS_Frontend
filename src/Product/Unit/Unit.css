@@ -1,0 +1,518 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* ══ SHELL ══ */
+.u-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    color: #323130;
+    background: #f3f2f1;
+}
+
+/* ══ COMMAND BAR ══ */
+.u-commandBar {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border-bottom: 1px solid #edebe9;
+    padding: 0 4px;
+    height: 44px;
+    gap: 0;
+    flex-shrink: 0;
+    overflow-x: auto;
+}
+
+.u-cmd-icon-btn {
+    background: none;
+    border: none;
+    font-size: 15px;
+    cursor: pointer;
+    color: #323130;
+    padding: 8px 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.u-cmd-icon-btn:hover {
+    background: #f3f2f1;
+}
+
+.u-cmd-hamburger {
+    background: #0078d4;
+    color: #ffffff;
+    border-radius: 3px;
+    margin-right: 4px;
+}
+
+.u-cmd-hamburger:hover {
+    background: #006abe;
+}
+
+.u-cmd-actions {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+}
+
+.u-cmd-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #323130;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.u-cmd-btn:hover:not(:disabled) {
+    background: #f3f2f1;
+}
+
+.u-cmd-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.u-cmd-save {
+    color: #0078d4;
+    font-weight: 600;
+}
+
+.u-cmd-divider {
+    width: 1px;
+    height: 24px;
+    background: #edebe9;
+    margin: 0 4px;
+    flex-shrink: 0;
+}
+
+.u-cmd-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+}
+
+.u-cmd-tab {
+    padding: 0 14px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    cursor: pointer;
+    color: #605e5c;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    flex-shrink: 0;
+}
+
+.u-cmd-tab:hover {
+    color: #323130;
+    background: #f3f2f1;
+}
+
+.u-cmd-tab-active {
+    font-weight: 600;
+    color: #323130;
+    border-bottom: 2px solid #0078d4;
+}
+
+.u-cmd-right {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* ══ BODY ══ */
+.u-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* ══ SIDEBAR ══ */
+.u-sidebar {
+    width: 260px;
+    min-width: 200px;
+    background: #ffffff;
+    border-right: 1px solid #edebe9;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.u-sidebar-filter {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid #edebe9;
+    gap: 6px;
+}
+
+.u-filter-icon {
+    color: #a19f9d;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.u-filter-input {
+    border: 1px solid #c8c6c4;
+    border-radius: 3px;
+    padding: 5px 8px;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    width: 100%;
+    outline: none;
+    color: #323130;
+}
+
+.u-filter-input:focus {
+    border-color: #0078d4;
+}
+
+.u-sidebar-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.u-sidebar-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f2f1;
+}
+
+.u-sidebar-item:hover {
+    background: #f3f2f1;
+}
+
+.u-sidebar-item-active {
+    background: #deecf9 !important;
+    border-left: 3px solid #0078d4;
+    padding-left: 13px;
+}
+
+.u-item-code {
+    font-size: 14px;
+    font-weight: 600;
+    color: #323130;
+}
+
+.u-item-desc {
+    font-size: 12px;
+    color: #605e5c;
+    margin-top: 1px;
+}
+
+.u-loading {
+    padding: 16px;
+    color: #605e5c;
+    font-size: 13px;
+}
+
+/* ══ DETAIL PANEL ══ */
+.u-detail {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 28px 28px;
+    background: #f3f2f1;
+}
+
+.u-std-view {
+    font-size: 13px;
+    color: #605e5c;
+    margin-bottom: 2px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.u-std-view:hover {
+    color: #0078d4;
+}
+
+.u-detail-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #323130;
+    margin-bottom: 14px;
+}
+
+/* ── Banners ── */
+.u-successBar {
+    background: #dff6dd;
+    color: #107c10;
+    border: 1px solid #92d050;
+    border-radius: 3px;
+    padding: 7px 12px;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+.u-errorBar {
+    background: #fde7e9;
+    color: #a4262c;
+    border: 1px solid #f1707b;
+    border-radius: 3px;
+    padding: 7px 12px;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+/* ── Header fields row (Unit + Description + Edit/Cancel) ── */
+.u-header-fields {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    background: #ffffff;
+    border: 1px solid #edebe9;
+    border-radius: 3px;
+    padding: 14px 16px;
+}
+
+.u-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.u-field-group-wide {
+    flex: 1;
+    min-width: 180px;
+}
+
+.u-field-label {
+    font-size: 12px;
+    color: #605e5c;
+}
+
+.u-field-input {
+    border: 1px solid #c8c6c4;
+    border-radius: 2px;
+    padding: 5px 8px;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #323130;
+    background: #ffffff;
+    outline: none;
+}
+
+.u-field-input:focus {
+    border-color: #0078d4;
+}
+
+.u-field-input:disabled {
+    background: #f3f2f1;
+    border-color: #e0dfdd;
+    color: #323130;
+    cursor: default;
+}
+
+.u-field-unit {
+    width: 72px;
+}
+
+.u-field-small {
+    width: 80px;
+    text-align: right;
+}
+
+.u-field-medium {
+    width: 140px;
+}
+
+.u-field-muted::placeholder {
+    color: #a19f9d;
+}
+
+.u-field-select {
+    border: 1px solid #c8c6c4;
+    border-radius: 2px;
+    padding: 5px 28px 5px 8px;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #323130;
+    background: #ffffff;
+    outline: none;
+    width: 100%;
+    cursor: pointer;
+    appearance: auto;
+}
+
+.u-field-select:focus {
+    border-color: #0078d4;
+}
+
+.u-field-select:disabled {
+    background: #f3f2f1;
+    border-color: #e0dfdd;
+    cursor: default;
+}
+
+.u-header-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 1px;
+}
+
+.u-btn-secondary {
+    background: #ffffff;
+    color: #323130;
+    border: 1px solid #c8c6c4;
+    border-radius: 3px;
+    padding: 5px 14px;
+    font-size: 13px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.u-btn-secondary:hover:not(:disabled) {
+    background: #f3f2f1;
+}
+
+.u-btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ══ GENERAL SECTION ══ */
+.u-section {
+    background: #ffffff;
+    border: 1px solid #edebe9;
+    border-radius: 3px;
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.u-section-header {
+    font-size: 13px;
+    font-weight: 600;
+    color: #323130;
+    padding: 8px 16px;
+    border-bottom: 1px solid #edebe9;
+    background: #ffffff;
+}
+
+.u-section-body {
+    padding: 16px 16px 20px;
+}
+
+/* 3-column general grid */
+.u-general-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+    border-top: 1px solid #edebe9;
+    padding-top: 14px;
+}
+
+.u-gen-col {
+    padding: 0 24px 0 0;
+    border-right: 1px solid #edebe9;
+    margin-right: 24px;
+}
+
+.u-gen-col:last-child {
+    border-right: none;
+    margin-right: 0;
+    padding-right: 0;
+}
+
+/* Column titles like ASSIGNMENT, CLASSIFICATION, ROLES */
+.u-col-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #323130;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+
+/* Sub-section titles like ROUNDING, RUSSIAN CLASSIFIERS */
+.u-sub-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #323130;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    padding-top: 16px;
+    border-top: 1px solid #edebe9;
+}
+
+.u-mt {
+    margin-top: 14px;
+}
+
+/* ══ TOGGLE SWITCH ══ */
+.u-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.u-toggle {
+    position: relative;
+    width: 40px;
+    height: 20px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+
+.u-toggle-off {
+    background: #c8c6c4;
+}
+
+.u-toggle-on {
+    background: #0078d4;
+}
+
+.u-toggle:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.u-toggle-thumb {
+    position: absolute;
+    top: 3px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ffffff;
+    transition: left 0.2s;
+}
+
+.u-toggle-off .u-toggle-thumb {
+    left: 3px;
+}
+
+.u-toggle-on .u-toggle-thumb {
+    left: 23px;
+}
+
+.u-toggle-label {
+    font-size: 13px;
+    color: #323130;
+}

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout/Layout";
 import Login from "./components/Login/Login";
 import { ToastContainer } from "react-toastify";
+// import ContactPage from "./Product/contact/contactInfo";
 
 const AppWrapper = () => {
   return (
@@ -9,6 +10,8 @@ const AppWrapper = () => {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/*" element={<Layout />} />
+
+
       </Routes>
       <ToastContainer />
     </>

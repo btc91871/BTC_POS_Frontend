@@ -25,8 +25,33 @@ const Sidebar = () => {
       subItems: [
         { label: "View Profile", to: "/view-profile" },
         { label: "Edit Profile", to: "/edit-profile" },
+
       ],
     },
+
+    {
+      key: "product",
+      label: "Product",
+      subItems: [
+        { label: "Style", to: "/style" },
+        { label: "Size", to: "/size" },
+        { label: "Site", to: "/site" },
+        { label: "Style Group", to: "/style-group" },
+        { label: "Size Group", to: "/size-group" },
+      ],
+    },
+
+    {
+      key: "storage",
+      label: "Storage",
+      subItems: [
+        { label: "Storage Group", to: "/storage" },
+        { label: "enum", to: "/enum" },
+        { label: "Unit", to: "/unit" },
+      ],
+    },
+
+
     {
       key: "settings",
       label: "Settings",
@@ -82,9 +107,8 @@ const Sidebar = () => {
           {menuItems.map((item) => (
             <li key={item.key} className="sidebar-item">
               <button
-                className={`sidebar-button ${
-                  openDropdown === item.key ? "is-open" : ""
-                }`}
+                className={`sidebar-button ${openDropdown === item.key ? "is-open" : ""
+                  }`}
                 onClick={() => toggleDropdown(item.key)}
                 type="button"
               >

@@ -1,0 +1,40 @@
+.contact-container {
+    padding: 20px;
+    font-family: Arial;
+}
+
+.toolbar {
+    margin-bottom: 10px;
+}
+
+button {
+    padding: 6px 10px;
+    margin-right: 5px;
+    cursor: pointer;
+}
+
+.contact-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.contact-table th,
+.contact-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+.contact-table th {
+    background-color: #f4f4f4;
+    text-align: left;
+}
+
+.contact-table input,
+.contact-table select {
+    width: 100%;
+    padding: 4px;
+}
+
+.active-row {
+    background-color: #dbeafe;
+}
