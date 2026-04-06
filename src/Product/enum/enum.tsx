@@ -8,10 +8,20 @@ interface EnumRecord {
     VALUE: number;
     dataAreaId: string;
 }
+
+
+//   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+//   const userId = import.meta.env.VITE_USER_ID;
+//   const authToken = import.meta.env.VITE_AUTH_TOKEN;
+//   const dataAreaId = import.meta.env.VITE_DATA_AREA_ID;
+
+
+
+
 const LOGGED_IN_USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
 const AUTH_TOKEN = "fake-token-for-now";
 const DATA_AREA_ID = "DAT";
-const API_BASE_URL = "http://192.168.0.102"; // 🔁 your port
+const API_BASE_URL = "http://192.168.0.110"; // 🔁 your port
 
 const EnumsPage: React.FC = () => {
 

@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit'
-import countSlice from './slices/counter/index.ts'
+import counterSlice from './slices/counter/index.ts'
 
 
 export default configureStore({
@@ -8,5 +8,5 @@ export default configureStore({
     },
 })
 
-export type RootState = ReturnType<typeof store.getState>
-export type AppDispatch = typeof store.dispatch
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch; 
