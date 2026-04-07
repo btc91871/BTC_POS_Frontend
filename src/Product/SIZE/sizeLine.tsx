@@ -1,28 +1,19 @@
 import React, { useState, useEffect, useCallback } from "react";
 // import "./StyleGroup.css";
+import type { SizeLinegroups } from "../productInterface.ts";
 
 
-// ──────────────────────────────────────────────
-// INTERFACES
-// ──────────────────────────────────────────────
-export interface SizeLinegroups {
-    size: string;
-    numberinbarcode: string;
-    sizegrouplinedisplayorder: number;
-    createdby: string;
-    modifiedby: string;
-}
 
 
 const LOGGED_IN_USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
-const API_BASE_URL = "http://192.168.0.104";
+const API_BASE_URL = "http://192.168.0.110";
 
 const EMPTY_LINE: SizeLinegroups = {
-    size: "",
-    numberinbarcode: "",
-    sizegrouplinedisplayorder: 0,
-    createdby: LOGGED_IN_USER_ID,
-    modifiedby: LOGGED_IN_USER_ID,
+    SIZE: "",
+    NUMBERINBARCODE: "",
+    SIZEGROUPLINEDISPLAYORDER: 0,
+    CREATEDBY: LOGGED_IN_USER_ID,
+    MODIFIEDBY: LOGGED_IN_USER_ID,
 };
 
 

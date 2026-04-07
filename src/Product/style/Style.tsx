@@ -1,19 +1,21 @@
 import React, { useState, useMemo, useEffect } from "react";
 import StyleForm from "../../components/Forms/styleForm";
+import { STYLE_API } from "../apiRoutes.ts";
+import type { StyleRecord } from "../productInterface.ts";
 // import Sidebar from "../../components/Sidebar/Sidebar";
 import "./Style.css";
 
 
-interface StyleRecord {
-    GUID: string;
-    STYLE: string;
-    STYLENAME: string;
-    STYLEDESCRIPTION: string;
-    STYLEDISPLAYORDER: number;
-    STYLEREFINERGROUP: string;
-    hexcode: string;
-    url: string;
-}
+// interface StyleRecord {
+//     GUID: string;
+//     STYLE: string;
+//     STYLENAME: string;
+//     STYLEDESCRIPTION: string;
+//     STYLEDISPLAYORDER: number;
+//     STYLEREFINERGROUP: string;
+//     hexcode: string;
+//     url: string;
+// }
 
 type SortDirection = "asc" | "desc" | null;
 type SortKey = keyof StyleRecord | null;
@@ -23,7 +25,7 @@ const LOGGED_IN_USER_ID = localStorage.getItem("userId") ?? "";
 const AUTH_TOKEN = localStorage.getItem("token") ?? "";
 
 
-const API_BASE_URL = "http://192.168.0.102";
+// const API_BASE_URL = "http://192.168.0.102";
 const EMPTY_ROW: StyleRecord = {
     GUID: "",
     STYLE: "",
@@ -59,7 +61,7 @@ const StylesPage: React.FC = () => {
         const loadStyles = async () => {
             try {
                 setPageLoading(true);
-                const response = await fetch(`${API_BASE_URL}/api/Style/getAllStyles`, {
+                const response = await fetch(STYLE_API.GET_STYLE, {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json",
@@ -177,7 +179,7 @@ const StylesPage: React.FC = () => {
         console.log("Saving new style with payload:", payload);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/Style/createStyle`, {
+            const response = await fetch(STYLE_API.CREATE_STYLE, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -192,7 +194,7 @@ const StylesPage: React.FC = () => {
                 throw new Error(errData.message || `Server error: ${response.status}`);
             }
 
-            // Add to table and clear the new row
+
             setRecords((prev) => [...prev, newRow]);
             setNewRow(null);
             showSuccess(`Style "${newRow.STYLE}" saved successfully.`);
@@ -211,16 +213,10 @@ const StylesPage: React.FC = () => {
     };
 
 
-    // const handleEditClick = (): void => {
-    //     setEditedRecords(records.map(r => ({ ...r })));
-    //     setIsEditMode(true);
-    //     setNewRow(null);
-    //     setRowError("");
-    // };
 
     const handleEditClick = (): void => {
-        setFilterText("");   // ← clear filter before entering edit mode
-        setSortKey(null);    // ← clear sort before entering edit mode
+        setFilterText("");
+        setSortKey(null);
         setEditedRecords(records.map(r => ({ ...r })));
         setIsEditMode(true);
         setNewRow(null);
@@ -273,7 +269,7 @@ const StylesPage: React.FC = () => {
 
                 console.log("Updating style with payload:", payload);
 
-                const response = await fetch(`${API_BASE_URL}/api/Style/updateStyleById`, {
+                const response = await fetch(STYLE_API.UPDATE_STYLE, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
@@ -303,7 +299,7 @@ const StylesPage: React.FC = () => {
         if (!window.confirm("Are you sure you want to delete this style?")) return;
         setIsLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/api/Style/DeleteStyleById`, {
+            const response = await fetch(STYLE_API.DELETE_STYLE, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ GUID: guid }),

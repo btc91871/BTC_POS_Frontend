@@ -1,47 +1,37 @@
 import React, { useState, useEffect, useCallback } from "react";
 // import "./StyleGroup.css";
-import type { SizeLinegroups } from "./sizeLine";
+import type { VITE_API_BASE_URL } from "../../env.d.ts";
+
+import type { SizeGroup } from "../productInterface.ts";
+
+import { SIZE_API } from "../apiRoutes.ts";
 
 
-
-interface SizeGroupINt {
-    id?: string;
-    sizename: string;
-    sizedescription: string;
-    sizedisplayorder: number;
-    sizerefinergroup: string;
-    createdby: string;
-    modifiedby: string;
-    lines: SizeLinegroups[];
-}
 
 
 const LOGGED_IN_USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
-const API_BASE_URL = "http://192.168.0.104";
+const API_BASE_URL = "http://192.168.0.110";
 
 
-const EMPTY_GROUP: SizeGroupINt = {
-    sizename: "",
-    sizedescription: "",
-    sizedisplayorder: 0,
-    sizerefinergroup: "",
-    createdby: LOGGED_IN_USER_ID,
-    modifiedby: LOGGED_IN_USER_ID,
-    lines: [],
+const EMPTY_GROUP: SizeGroup = {
+    SIZEGROUPNAME: "",
+    SIZEGROUPDESCRIPTION: "",
+    CREATEDBY: LOGGED_IN_USER_ID,
+    MODIFIEDBY: LOGGED_IN_USER_ID,
+    Lines: [],
 };
 
-// ──────────────────────────────────────────────
-// COMPONENT
-// ──────────────────────────────────────────────
+
+
 const Sizegroup: React.FC = () => {
     //groups all data
-    const [groups, setGroups] = useState<SizeGroupINt[]>([]);
-    const [selectedGroupIdx, setSelectedGroupIdx] = useState<number>(0); //current row
+    const [groups, setGroups] = useState<SizeGroup[]>([]);
+    const [selectedGroupIdx, setSelectedGroupIdx] = useState<number>(0);
     const [filterText, setFilterText] = useState<string>("");
 
     //editing
     const [isEditing, setIsEditing] = useState<boolean>(false);
-    const [draft, setDraft] = useState<SizeGroupINt | null>(null);
+    const [draft, setDraft] = useState<SizeGroup | null>(null);
 
     const [generalOpen, setGeneralOpen] = useState<boolean>(true);
 
@@ -85,11 +75,6 @@ const Sizegroup: React.FC = () => {
         setDraft(null);
     };
 
-
-
-
-
-
     const fetchGroups = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -98,7 +83,7 @@ const Sizegroup: React.FC = () => {
             if (!res.ok) throw new Error(`GET failed: ${res.status}`);
             const data = await res.json();
 
-            let list: StyleGroup[] = [];
+            let list: SizeGroup[] = [];
             if (Array.isArray(data)) {
                 list = data;
             } else if (Array.isArray(data.value)) {
@@ -124,17 +109,15 @@ const Sizegroup: React.FC = () => {
         fetchGroups();
     }, [fetchGroups]);
 
-    // ──────────────────────────────────────────────
-    // POST
-    // ──────────────────────────────────────────────
+
     const handlePost = async () => {
         if (!draft) return;
         setLoading(true);
         setError(null);
         try {
             const payload = {
-                sizename: draft.sizename,
-                sizedescription: draft.sizedescription,
+                SIZENAME: draft.SIZENAME,
+                SIZEDESCRIPTION: draft.SIZEDESCRIPTION,
                 createdby: LOGGED_IN_USER_ID,
                 modifiedby: LOGGED_IN_USER_ID,
                 // lines: draft.lines.map(l => ({
@@ -205,9 +188,8 @@ const Sizegroup: React.FC = () => {
         }
     };
 
-    // ──────────────────────────────────────────────
-    // DELETE
-    // ──────────────────────────────────────────────
+
+
     const handleDelete = async () => {
         if (!selected?.id) return;
         if (!window.confirm("Delete this style group?")) return;
@@ -230,9 +212,9 @@ const Sizegroup: React.FC = () => {
         }
     };
 
-    // ──────────────────────────────────────────────
-    // LOCAL HELPERS
-    // ──────────────────────────────────────────────
+
+
+
     const handleNew = () => {
         const blank = { ...EMPTY_GROUP };
         setGroups(prev => [blank, ...prev]);
@@ -270,7 +252,7 @@ const Sizegroup: React.FC = () => {
     return (
         <div className="sgl-shell">
 
-            {/* ══ TOASTS ══ */}
+
             {error && (
                 <div className="sgl-toast sgl-toast-error" onClick={() => setError(null)}>
                     ⚠ {error}

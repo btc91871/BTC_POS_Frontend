@@ -1,30 +1,40 @@
 import React, { useState, useMemo, useEffect } from "react";
 import StyleForm from "../../components/Forms/styleForm";
-
+import type { API_BASE_URL } from "../apiRoutes.ts";
+import type { SizeRecord } from "../productInterface.ts";
+import { SIZE_API } from "../apiRoutes.ts";
 import "./size.css";
 
 
-interface SizeRecord {
-    GUID: string;
-    SIZE: string;
-    SIZENAME: string;
-    SIZEDESCRIPTION: string;
-    SIZEDISPLAYORDER: number;
-    SIZEREFINERGROUP: string;
-    hexcode: string;
-    url: string;
-}
+// interface SizeRecord {
+//     GUID: string;
+//     SIZE: string;
+//     SIZENAME: string;
+//     SIZEDESCRIPTION: string;
+//     SIZEDISPLAYORDER: number;
+//     SIZEREFINERGROUP: string;
+//     hexcode: string;
+//     url: string;
+// }
 
 type SortDirection = "asc" | "desc" | null;
 type SortKey = keyof SizeRecord | null;
 
 
-// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────  
+// const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+//   const userId = import.meta.env.VITE_USER_ID;
+//   const authToken = import.meta.env.VITE_AUTH_TOKEN;
+//   const dataAreaId = import.meta.env.VITE_DATA_AREA_ID;
+
 const LOGGED_IN_USER_ID = localStorage.getItem("userId") ?? "";
 const AUTH_TOKEN = localStorage.getItem("token") ?? "";
 
 
-const API_BASE_URL = "http://192.168.0.102";
+
+// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+// const API_BASE_URL = "http://192.168.0.110";
 
 const EMPTY_ROW: SizeRecord = {
     GUID: "",
@@ -60,7 +70,9 @@ const SizePage: React.FC = () => {
         const loadSizes = async () => {
             try {
                 setPageLoading(true);
-                const response = await fetch(`${API_BASE_URL}/api/Size/getAllSizes`, {
+                // const response = await fetch(`${API_BASE_URL}/api/Size/getAllSizes`, {
+                const response = await fetch(SIZE_API.GET_SIZE, {
+
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json",
@@ -189,7 +201,7 @@ const SizePage: React.FC = () => {
         console.log("Saving new size with payload:", payload);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/Size/createSize`, {
+            const response = await fetch(SIZE_API.CREATE_SIZE, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -284,7 +296,7 @@ const SizePage: React.FC = () => {
 
                 console.log("✅ FINAL PAYLOAD:", payload);
 
-                const response = await fetch(`${API_BASE_URL}/api/Size/UpdateSizeById`, {
+                const response = await fetch(SIZE_API.UPDATE_SIZE, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
@@ -316,7 +328,7 @@ const SizePage: React.FC = () => {
         if (!window.confirm("Are you sure you want to delete this size?")) return;
         setIsLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/api/Size/DeleteSizeById`, {
+            const response = await fetch(SIZE_API.DELETE_SIZE, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ GUID: guid }),
