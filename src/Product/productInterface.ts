@@ -1,12 +1,4 @@
-export interface SizeGroup {
-    id?: string;
-    SIZEGROUPNAME: string;
-    SIZEGROUPDESCRIPTION: string;
-    CREATEDBY: string;
-    MODIFIEDBY: string;
-    Lines: SizeLinegroups[];
-}
-
+// only SIZE
 export interface SizeRecord {
     GUID: string;
     SIZE: string;
@@ -18,7 +10,15 @@ export interface SizeRecord {
     url: string;
 }
 
-
+// Size Group   xxxxxxxxxxx
+export interface SizeGroup {
+    GUID: string;
+    SIZEGROUPNAME: string;
+    SIZEGROUPDESCRIPTION: string;
+    CREATEDBY: string;
+    MODIFIEDBY: string;
+    Lines: SizeLinegroups[];
+}
 export interface SizeLinegroups {
     Guid: String;
     SIZE: string;
@@ -29,7 +29,7 @@ export interface SizeLinegroups {
 }
 
 
-
+// only STYLE
 export interface StyleRecord {
     GUID: string;
     STYLE: string;
@@ -40,3 +40,24 @@ export interface StyleRecord {
     hexcode: string;
     url: string;
 }
+
+// Style Group xxxxxxxxxxxx
+export interface StyleGroup {
+    id?: string;
+    stylegroupname: string;
+    stylegroupdescription: string;
+    createdby: string;
+    modifiedby: string;
+    lines: StyleGroupLine[];
+}
+
+export interface StyleGroupLine {
+    style: string;
+    numberinbarcode: string;
+    stylegrouplinedisplayorder: number;
+    createdby: string;
+    modifiedby: string;
+}
+
+
+

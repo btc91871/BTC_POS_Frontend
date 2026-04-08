@@ -65,7 +65,7 @@ const Layout = () => {
           <Route path="/unit" element={<UnitsPage />} />
           <Route path="/site" element={<SitesPage />} />
           <Route path="/contact" element={<ContactPage />} />
-          {/* <Route path="/size-group" element={<Sizegroup />} /> */}
+          <Route path="/size-group" element={<Sizegroup />} />
           <Route path="/size" element={<SizePage />} />
 
 
