@@ -1,26 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "./StyleGroup.css";
-
-// ──────────────────────────────────────────────
-// INTERFACES
-// ──────────────────────────────────────────────
-interface StyleGroupLine {
-    style: string;
-    numberinbarcode: string;
-    stylegrouplinedisplayorder: number;
-    createdby: string;
-    modifiedby: string;
-}
-
-interface StyleGroup {
-    id?: string;
-    stylegroupname: string;
-    stylegroupdescription: string;
-    createdby: string;
-    modifiedby: string;
-    lines: StyleGroupLine[];
-}
-
+import type { StyleGroup, StyleGroupLine } from "../productInterface.ts";
 
 
 
@@ -63,12 +43,7 @@ const StylelinePage: React.FC = () => {
     const selected = groups[selectedGroupIdx] ?? null;
     const displayGroup = isEditing && draft ? draft : selected;
 
-    // console.log(displayGroup);
 
-
-    // ──────────────────────────────────────────────
-    // GET
-    // ──────────────────────────────────────────────
     const fetchGroups = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -104,9 +79,7 @@ const StylelinePage: React.FC = () => {
         fetchGroups();
     }, [fetchGroups]);
 
-    // ──────────────────────────────────────────────
-    // POST
-    // ──────────────────────────────────────────────
+
     const handlePost = async () => {
         if (!draft) return;
         setLoading(true);
@@ -148,9 +121,6 @@ const StylelinePage: React.FC = () => {
         }
     };
 
-    // ──────────────────────────────────────────────
-    // PUT
-    // ──────────────────────────────────────────────
     const handlePut = async () => {
         if (!draft || !selected?.id) return;
         setLoading(true);
@@ -194,9 +164,7 @@ const StylelinePage: React.FC = () => {
         }
     };
 
-    // ──────────────────────────────────────────────
-    // DELETE
-    // ──────────────────────────────────────────────
+
     const handleDelete = async () => {
 
         console.log("DELETE CLICKED");
@@ -227,9 +195,7 @@ const StylelinePage: React.FC = () => {
         }
     };
 
-    // ──────────────────────────────────────────────
-    // SAVE ROUTER — decides POST or PUT
-    // ──────────────────────────────────────────────
+
     const handleSave = () => {
         if (!draft) return;
 
@@ -240,9 +206,7 @@ const StylelinePage: React.FC = () => {
         }
     };
 
-    // ──────────────────────────────────────────────
-    // LOCAL HELPERS
-    // ──────────────────────────────────────────────
+
     const handleNew = () => {
         const blank: StyleGroup = {
             stylegroupname: "",
@@ -254,13 +218,13 @@ const StylelinePage: React.FC = () => {
 
         setGroups(prev => [blank, ...prev]);
         setSelectedGroupIdx(0);
-        setDraft({ ...blank, lines: [] }); // ✅ ensure new reference
+        setDraft({ ...blank, lines: [] });
         setIsEditing(true);
     };
 
     const startEdit = () => {
         if (selected) {
-            setDraft(JSON.parse(JSON.stringify(selected))); // deep copy of THIS group only
+            setDraft(JSON.parse(JSON.stringify(selected)));
             setIsEditing(true);
             setIsAddingLine(false);
             setNewLine({ ...EMPTY_LINE });
@@ -297,9 +261,6 @@ const StylelinePage: React.FC = () => {
         );
     };
 
-    // ──────────────────────────────────────────────
-    // RENDER
-    // ──────────────────────────────────────────────
     return (
         <div className="sgl-shell">
 

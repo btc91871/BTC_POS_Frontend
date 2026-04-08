@@ -1,5 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import "./enum.css";
+import { API_BASE_URL } from "../apiRoutes";
+import { ENUM_API } from "../apiRoutes.ts";
+
 
 
 interface EnumRecord {
@@ -10,18 +13,12 @@ interface EnumRecord {
 }
 
 
-//   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-//   const userId = import.meta.env.VITE_USER_ID;
-//   const authToken = import.meta.env.VITE_AUTH_TOKEN;
-//   const dataAreaId = import.meta.env.VITE_DATA_AREA_ID;
-
-
 
 
 const LOGGED_IN_USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
 const AUTH_TOKEN = "fake-token-for-now";
 const DATA_AREA_ID = "DAT";
-const API_BASE_URL = "http://192.168.0.110"; // 🔁 your port
+// const API_BASE_URL = "http://192.168.0.113"; // 🔁 your port
 
 const EnumsPage: React.FC = () => {
 
@@ -35,15 +32,20 @@ const EnumsPage: React.FC = () => {
     const [successMsg, setSuccessMsg] = useState<string>("");
     const [errorMsg, setErrorMsg] = useState<string>("");
 
+
+
+
+    // await fetch(SIZE_API.GET_SIZE, {
+
     useEffect(() => {
         const fetchEnums = async () => {
             try {
                 setPageLoading(true);
 
-                const res = await fetch(`${API_BASE_URL}/api/Enum/all`);
+                const res = await fetch(ENUM_API.GET_ENUMS);
                 if (!res.ok) throw new Error("Failed to fetch enums.");
                 const data = await res.json();
-                setRecords(Array.isArray(data) ? data : data.data ?? []); // handles wrapped response
+                setRecords(Array.isArray(data) ? data : data.Data ?? []); // handles wrapped response
             } catch (err) {
                 setErrorMsg("Could not load enums. Please refresh.");
                 console.error(err);
@@ -96,7 +98,7 @@ const EnumsPage: React.FC = () => {
         };
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/Enum/create`, {
+            const res = await fetch(ENUM_API.CREATE_ENUM, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -160,7 +162,7 @@ const EnumsPage: React.FC = () => {
             );
 
             for (const row of changedRows) {
-                const res = await fetch(`${API_BASE_URL}/api/Enum/update`, {
+                const res = await fetch(ENUM_API.UPDATE_ENUM, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
@@ -199,7 +201,7 @@ const EnumsPage: React.FC = () => {
         setErrorMsg("");
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/Enum`, {
+            const res = await fetch(ENUM_API.DELETE_ENUM, {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",

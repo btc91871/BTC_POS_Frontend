@@ -6,35 +6,13 @@ import { SIZE_API } from "../apiRoutes.ts";
 import "./size.css";
 
 
-// interface SizeRecord {
-//     GUID: string;
-//     SIZE: string;
-//     SIZENAME: string;
-//     SIZEDESCRIPTION: string;
-//     SIZEDISPLAYORDER: number;
-//     SIZEREFINERGROUP: string;
-//     hexcode: string;
-//     url: string;
-// }
 
 type SortDirection = "asc" | "desc" | null;
 type SortKey = keyof SizeRecord | null;
 
 
-// ─────────────────────────────────────────────  
-// const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-//   const userId = import.meta.env.VITE_USER_ID;
-//   const authToken = import.meta.env.VITE_AUTH_TOKEN;
-//   const dataAreaId = import.meta.env.VITE_DATA_AREA_ID;
-
 const LOGGED_IN_USER_ID = localStorage.getItem("userId") ?? "";
 const AUTH_TOKEN = localStorage.getItem("token") ?? "";
-
-
-
-// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-// const API_BASE_URL = "http://192.168.0.110";
 
 const EMPTY_ROW: SizeRecord = {
     GUID: "",
@@ -50,7 +28,6 @@ const EMPTY_ROW: SizeRecord = {
 
 
 const SizePage: React.FC = () => {
-
     const [records, setRecords] = useState<SizeRecord[]>([]);
     const [filterText, setFilterText] = useState<string>("");
     const [sortKey, setSortKey] = useState<keyof SizeRecord | null>(null);
@@ -59,7 +36,6 @@ const SizePage: React.FC = () => {
     const [rowError, setRowError] = useState<string>("");
     const [isEditMode, setIsEditMode] = useState<boolean>(false);
     const [editedRecords, setEditedRecords] = useState<SizeRecord[]>([]);
-
     const [successMsg, setSuccessMsg] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [pageLoading, setPageLoading] = useState<boolean>(true);
@@ -70,7 +46,6 @@ const SizePage: React.FC = () => {
         const loadSizes = async () => {
             try {
                 setPageLoading(true);
-                // const response = await fetch(`${API_BASE_URL}/api/Size/getAllSizes`, {
                 const response = await fetch(SIZE_API.GET_SIZE, {
 
                     method: "GET",
@@ -145,9 +120,6 @@ const SizePage: React.FC = () => {
         return sortDir === "asc" ? "↑" : "↓";
     };
 
-    // ──────────────────────────────────────────
-    // Existing row inline edit (sizeForm rows)
-    // ──────────────────────────────────────────
     const handleTableChange = (index: number, field: keyof SizeRecord, value: string): void => {
         const updated = [...records];
         updated[index] = {
@@ -157,9 +129,7 @@ const SizePage: React.FC = () => {
         setRecords(updated);
     };
 
-    // ──────────────────────────────────────────
-    // New inline row — add empty editable row
-    // ──────────────────────────────────────────
+
     const addRow = (): void => {
         if (newRow) return; // only one new row at a time
         setNewRow({ ...EMPTY_ROW });
@@ -174,10 +144,6 @@ const SizePage: React.FC = () => {
         setRowError("");
     };
 
-    // ──────────────────────────────────────────
-
-    // Your POST endpoint: /api/size/size
-    // ──────────────────────────────────────────
     const handleSave = async (): Promise<void> => {
         if (!newRow?.SIZE.trim()) {
             setRowError("Size code is required.");
@@ -187,7 +153,6 @@ const SizePage: React.FC = () => {
         setIsLoading(true);
         setRowError("");
 
-        // Build payload: visible fields + auto-filled auth fields
         const payload = {
             size: newRow.SIZE,
             sizename: newRow.SIZENAME,

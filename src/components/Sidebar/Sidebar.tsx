@@ -36,8 +36,17 @@ const Sidebar = () => {
         { label: "Style", to: "/style" },
         { label: "Size", to: "/size" },
         { label: "Site", to: "/site" },
-        { label: "Style Group", to: "/style-group" },
+        // { label: "Style Group", to: "/style-group" },
+        // { label: "Size Group", to: "/size-group" },
+      ],
+    },
+
+    {
+      key: "groups",
+      label: "Group",
+      subItems: [
         { label: "Size Group", to: "/size-group" },
+        { label: "Style Group", to: "/style-group" },
       ],
     },
 
