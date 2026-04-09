@@ -5,11 +5,11 @@ import "./Unit.css";
 // INTERFACES
 // ──────────────────────────────────────────────
 interface UnitRecord {
-    guid: string;
-    unit: string;
-    description: string;
-    unitclass: number;   // goes to DB
-    isbaseunit: number;  // goes to DB
+    GUID: string;
+    UNIT: string;
+    DESCRIPTION: string;
+    UNITCLASS: number;   // goes to DB
+    ISBASEUNIT: number;  // goes to DB
 }
 
 const UNIT_CLASS_OPTIONS = [
@@ -29,21 +29,19 @@ const SYSTEM_OF_UNITS_OPTIONS = ["None", "SI", "US", "Imperial"];
 // ──────────────────────────────────────────────
 const LOGGED_IN_USER_ID = localStorage.getItem("userId") ?? "";
 const AUTH_TOKEN = localStorage.getItem("token") ?? "";
-const API_BASE_URL = "http://192.168.0.100"; // 🔁 your port
+const API_BASE_URL = "http://192.168.0.106"; // 🔁 your port
 
 // const API_BASE_URL = "http://192.168.0.112"; // 🔁 your port
 
 
 const EMPTY_UNIT: UnitRecord = {
-    unit: "",
-    description: "",
-    unitclass: 0,
-    isbaseunit: 0,
+    UNIT: "",
+    DESCRIPTION: "",
+    UNITCLASS: 0,
+    ISBASEUNIT: 0,
 };
 
-// ──────────────────────────────────────────────
-// TOGGLE COMPONENT
-// ──────────────────────────────────────────────
+
 const Toggle: React.FC<{
     value: boolean;
     onChange?: () => void;
@@ -124,7 +122,7 @@ const UnitsPage: React.FC = () => {
     const handleChange = (field: keyof UnitRecord, value: string) => {
         setFormData(prev => ({
             ...prev,
-            [field]: (field === "unitclass" || field === "isbaseunit") ? Number(value) : value,
+            [field]: (field === "UNITCLASS" || field === "ISBASEUNIT") ? Number(value) : value,
         }));
     };
 
@@ -150,7 +148,7 @@ const UnitsPage: React.FC = () => {
     };
 
     const handleSave = async () => {
-        if (!formData.unit.trim()) { setErrorMsg("Unit code is required."); return; }
+        if (!formData.UNIT.trim()) { setErrorMsg("Unit code is required."); return; }
         setIsLoading(true);
         setErrorMsg("");
         try {
@@ -158,11 +156,12 @@ const UnitsPage: React.FC = () => {
                 const payload = {
                     ...formData,
                     // id: selected.id,
-                    createdby: "05065350-017F-45F8-AB68-9AC04CBE135F",
-                    modifiedby: "05065350-017F-45F8-AB68-9AC04CBE135F",
+                    CREATEDBY: "05065350-017F-45F8-AB68-9AC04CBE135F",
+                    MODIFIEDBY: "05065350-017F-45F8-AB68-9AC04CBE135F",
+                    DATAAREAID: "DAT",
                 };
 
-                console.log("Saving new unit with payload:", payload);
+                // console.log("Saving new unit with payload:", payload);
                 const res = await fetch(`${API_BASE_URL}/api/Unit/createUnit`, {
                     method: "POST",
                     headers: {
@@ -177,12 +176,12 @@ const UnitsPage: React.FC = () => {
                 setRecords(updated);
                 setSelected({ ...formData });
                 setSelectedIdx(updated.length - 1);
-                showSuccess(`Unit "${formData.unit}" created.`);
+                showSuccess(`Unit "${formData.UNIT}" created.`);
             } else if (isEditing && selected) {
                 const payload = {
-                    guid: selected.guid, // 🔥 here instead
+                    guid: selected.GUID, // 🔥 here instead
                     ...formData,
-                    modifiedby: LOGGED_IN_USER_ID,
+                    MODIFIEDBY: LOGGED_IN_USER_ID,
                 };
 
                 const res = await fetch(`${API_BASE_URL}/api/Unit/updateUnitById`, {
@@ -197,7 +196,7 @@ const UnitsPage: React.FC = () => {
                 const updated = records.map((r, i) => i === selectedIdx ? { ...formData } : r);
                 setRecords(updated);
                 setSelected({ ...formData });
-                showSuccess(`Unit "${formData.unit}" updated.`);
+                showSuccess(`Unit "${formData.UNIT}" updated.`);
             }
             setIsNew(false);
             setIsEditing(false);
@@ -212,10 +211,10 @@ const UnitsPage: React.FC = () => {
 
     const handleDelete = async () => {
         if (!selected || isNew) return;
-        if (!window.confirm(`Delete unit "${selected.unit}"?`)) return;
+        if (!window.confirm(`Delete unit "${selected.UNIT}"?`)) return;
         setIsLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/Unit/deleteUnit/${selected.guid}`, {
+            const res = await fetch(`${API_BASE_URL}/api/Unit/deleteUnit/${selected.GUID}`, {
                 method: "DELETE",
                 headers: { "Authorization": `Bearer ${AUTH_TOKEN}` },
             });
@@ -240,8 +239,8 @@ const UnitsPage: React.FC = () => {
     };
 
     const filteredRecords = records.filter(r =>
-        r.unit.toLowerCase().includes(filterText.toLowerCase()) ||
-        r.description.toLowerCase().includes(filterText.toLowerCase())
+        r.UNIT.toLowerCase().includes(filterText.toLowerCase()) ||
+        r.DESCRIPTION.toLowerCase().includes(filterText.toLowerCase())
     );
 
     const editable = isNew || isEditing;
@@ -305,8 +304,8 @@ const UnitsPage: React.FC = () => {
                         {pageLoading && <p className="u-loading">Loading...</p>}
                         {isNew && (
                             <div className="u-sidebar-item u-sidebar-item-active">
-                                <div className="u-item-code">{formData.unit || "NEW"}</div>
-                                <div className="u-item-desc">{formData.description || "New unit"}</div>
+                                <div className="u-item-code">{formData.UNIT || "NEW"}</div>
+                                <div className="u-item-desc">{formData.DESCRIPTION || "New unit"}</div>
                             </div>
                         )}
                         {filteredRecords.map((r, idx) => (
@@ -315,8 +314,8 @@ const UnitsPage: React.FC = () => {
                                 className={`u-sidebar-item ${!isNew && selectedIdx === idx ? "u-sidebar-item-active" : ""}`}
                                 onClick={() => handleSelectUnit(r, idx)}
                             >
-                                <div className="u-item-code">{r.unit}</div>
-                                <div className="u-item-desc">{r.description}</div>
+                                <div className="u-item-code">{r.UNIT}</div>
+                                <div className="u-item-desc">{r.DESCRIPTION}</div>
                             </div>
                         ))}
                     </div>
@@ -337,8 +336,8 @@ const UnitsPage: React.FC = () => {
                             <label className="u-field-label">Unit</label>
                             <input
                                 className="u-field-input u-field-unit"
-                                value={formData.unit}
-                                onChange={e => handleChange("unit", e.target.value)}
+                                value={formData.UNIT}
+                                onChange={e => handleChange("UNIT", e.target.value)}
                                 placeholder="Unit"
                                 disabled={!editable}
                             />
@@ -347,8 +346,8 @@ const UnitsPage: React.FC = () => {
                             <label className="u-field-label">Description</label>
                             <input
                                 className="u-field-input"
-                                value={formData.description}
-                                onChange={e => handleChange("description", e.target.value)}
+                                value={formData.DESCRIPTION}
+                                onChange={e => handleChange("DESCRIPTION", e.target.value)}
                                 placeholder="Description"
                                 disabled={!editable}
                             />
@@ -379,8 +378,8 @@ const UnitsPage: React.FC = () => {
                                         <label className="u-field-label">Unit class</label>
                                         <select
                                             className="u-field-select"
-                                            value={formData.unitclass}
-                                            onChange={e => handleChange("unitclass", e.target.value)}
+                                            value={formData.UNITCLASS}
+                                            onChange={e => handleChange("UNITCLASS", e.target.value)}
                                             disabled={!editable}
                                         >
                                             {UNIT_CLASS_OPTIONS.map(o => (
@@ -411,11 +410,11 @@ const UnitsPage: React.FC = () => {
                                         <label className="u-field-label">Base unit</label>
                                         <div className="u-toggle-row">
                                             <Toggle
-                                                value={formData.isbaseunit === 1}
-                                                onChange={() => editable && handleChange("isbaseunit", formData.isbaseunit === 1 ? "0" : "1")}
+                                                value={formData.ISBASEUNIT === 1}
+                                                onChange={() => editable && handleChange("ISBASEUNIT", formData.ISBASEUNIT === 1 ? "0" : "1")}
                                                 disabled={!editable}
                                             />
-                                            <span className="u-toggle-label">{formData.isbaseunit === 1 ? "Yes" : "No"}</span>
+                                            <span className="u-toggle-label">{formData.ISBASEUNIT === 1 ? "Yes" : "No"}</span>
                                         </div>
                                     </div>
 

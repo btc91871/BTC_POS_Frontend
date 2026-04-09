@@ -12,18 +12,20 @@ export const SIZE_API = {
 
 //Size group
 export const SIZE_GROUP = {
-    GET_SIZE_GROUP: `${API_BASE_URL}/api/Size/getSizeGroupById`,
-    CREATE_SIZE_GROUP: `${API_BASE_URL}/api/Size/createSizeGroupNdLine`,
-    UPDATE_SIZE_GROUP: `${API_BASE_URL}/api/Size/updateSizeGroupById`,
-    DELETE_SIZE_GROUP: `${API_BASE_URL}/api/Size/DeleteSizeGroupById`,
+    GET_ALL: `${API_BASE_URL}/api/Size/GetSizeGroupsWithLine`,
+    GET_ID: `${API_BASE_URL}/api/Size/getSizeGroupById`,
+    CREATE: `${API_BASE_URL}/api/Size/createSizeGroupNdLine`,
+    UPDATE: `${API_BASE_URL}/api/Size/updateSizeGroupById`,
+    DELETE: `${API_BASE_URL}/api/Size/DeleteSizeGroupById`,
+    DELETE_LINE: `${API_BASE_URL}/api/Size/DeleteSizeGroupLineById`,
 }
 
-export const SIZE_LINE = {
-    GET_SIZE_LINE: `${API_BASE_URL}/api/Size/GetSizeGroupsWithLine`,
-    CREATE_SIZE_LINE: `${API_BASE_URL}/api/Size/createSizeLine`,
-    // UPDATE_SIZE_LINE: `${API_BASE_URL}/api/Size/updateSizeLineById`,
-    DELETE_SIZE_LINE: `${API_BASE_URL}/api/Size/DeleteSizeGroupLineById`,
-}
+// export const SIZE_LINE = {
+//     GET_SIZE_LINE: `${API_BASE_URL}/api/Size/GetSizeGroupsWithLine`,
+//     CREATE_SIZE_LINE: `${API_BASE_URL}/api/Size/createSizeGroupNdLine`,
+//     // UPDATE_SIZE_LINE: `${API_BASE_URL}/api/Size/updateSizeLineById`,
+//     DELETE_SIZE_LINE: `${API_BASE_URL}/api/Size/DeleteSizeGroupLineById`,
+// }
 
 
 // STYLE PAGE

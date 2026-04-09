@@ -1,73 +1,96 @@
 import React, { useState, useEffect, useCallback } from "react";
-import "./StyleGroup.css";
-import type { StyleGroup, StyleGroupLine } from "../productInterface.ts";
-
-
+import "./SizeGroup.css";
+import type { StyleGroup, StyleLineGroups } from "../productInterface.ts";
+import { API_BASE_URL, STYLE_API, STYLE_GROUP } from "../apiRoutes.ts";
 
 const LOGGED_IN_USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
-const API_BASE_URL = "http://192.168.0.100";
 
-const EMPTY_LINE: StyleGroupLine = {
-    style: "",
-    numberinbarcode: "",
-    stylegrouplinedisplayorder: 0,
-    createdby: LOGGED_IN_USER_ID,
-    modifiedby: LOGGED_IN_USER_ID,
-};
+// const LOGGED_IN_USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
+const TEMP_SIZE_GUID = "dc6f5ec3-9591-4b39-9e78-a9a6a8d14e9b"; // ← remove when size picker is ready
 
-const EMPTY_GROUP: StyleGroup = {
-    stylegroupname: "",
-    stylegroupdescription: "",
-    createdby: LOGGED_IN_USER_ID,
-    modifiedby: LOGGED_IN_USER_ID,
-    lines: [],
-};
+const createEmptyGroup = (): StyleGroup => ({
+    Guid: "",
+    STYLEGROUPNAME: "",
+    STYLEGROUPDESCRIPTION: "",
+    CREATEDBY: LOGGED_IN_USER_ID,
+    MODIFIEDBY: LOGGED_IN_USER_ID,
+    Lines: [],
+});
+
+const createEmptyLine = (): StyleLineGroups => ({
+    Guid: "",
+    STYLE: TEMP_SIZE_GUID,
+    NUMBERINBARCODE: "",
+    STYLEGROUPLINEDISPLAYORDER: 0,
+    CREATEDBY: LOGGED_IN_USER_ID,
+    MODIFIEDBY: LOGGED_IN_USER_ID,
+});
 
 
-
-
-const StylelinePage: React.FC = () => {
-
+const StyleGroup: React.FC = () => {
     const [groups, setGroups] = useState<StyleGroup[]>([]);
-    const [selectedGroupIdx, setSelectedGroupIdx] = useState<number>(0);
+
+    // FIX 1: Track selection by GUID string, NOT by array index.
+    // Using index breaks whenever the array is filtered or re-ordered.
+    const [selectedGuid, setSelectedGuid] = useState<string>("");
+
     const [filterText, setFilterText] = useState<string>("");
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [draft, setDraft] = useState<StyleGroup | null>(null);
-    const [isAddingLine, setIsAddingLine] = useState<boolean>(false);
-    const [newLine, setNewLine] = useState<StyleGroupLine>({ ...EMPTY_LINE });
+    const [generalOpen, setGeneralOpen] = useState<boolean>(true);
     const [detailsOpen, setDetailsOpen] = useState<boolean>(true);
+    const [isAddingLine, setIsAddingLine] = useState<boolean>(false);
+    const [newLine, setNewLine] = useState<StyleLineGroups>(createEmptyLine());
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-    const selected = groups[selectedGroupIdx] ?? null;
+    // FIX 2: Derive `selected` by finding the group whose GUID matches.
+    // Before: groups[selectedGroupIdx] — broke when filtered list was used.
+    const selected = groups.find(g => g.Guid === selectedGuid) ?? null;
     const displayGroup = isEditing && draft ? draft : selected;
 
+    // FIX 3: Filter is only used for sidebar display.
+    // selectedGuid still points to the correct group regardless of filter.
+    // const filteredGroups = groups.filter(g =>
+    //     g.SIZEGROUPNAME.toLowerCase().includes(filterText.toLowerCase()) ||
+    //     (g.SIZEGROUPDESCRIPTION ?? "").toLowerCase().includes(filterText.toLowerCase())
+    // );
 
+    const filteredGroups = groups.filter(g => {
+        const name = (g.STYLEGROUPNAME ?? "").toLowerCase();
+        const desc = (g.STYLEGROUPDESCRIPTION ?? "").toLowerCase();
+        const search = filterText.toLowerCase();
+
+        return name.includes(search) || desc.includes(search);
+    });
+
+    // ── FETCH ──────────────────────────────────────────────────────────────
     const fetchGroups = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/Style/GetStyleGroupsWithLines`);
+            // const res = await fetch(SIZE_GROUP.GET_SIZE_GROUP);
+            const res = await fetch(STYLE_GROUP.GET_ALL);
             if (!res.ok) throw new Error(`GET failed: ${res.status}`);
             const data = await res.json();
 
-            // console.log("Raw GET response:", data);
-
             let list: StyleGroup[] = [];
-            if (Array.isArray(data)) {
-                list = data;
-            } else if (Array.isArray(data.value)) {
-                list = data.value;
-            } else if (Array.isArray(data.data)) {
-                list = data.data;
-            } else if (Array.isArray(data.items)) {
-                list = data.items;
-            } else if (data && typeof data === "object") {
-                list = [data];
-            }
+            if (Array.isArray(data)) list = data;
+            else if (Array.isArray(data.Data)) list = data.Data;
+            else if (Array.isArray(data.value)) list = data.value;
+            else if (Array.isArray(data.data)) list = data.data;
+            else if (Array.isArray(data.items)) list = data.items;
+            else if (data && typeof data === "object") list = [data];
 
             setGroups(list);
+
+            // FIX 4: After fetch keep current selection if GUID still exists,
+            // otherwise auto-select the first item.
+            setSelectedGuid(prev => {
+                const stillExists = list.some(g => g.Guid === prev);
+                return stillExists ? prev : (list[0]?.Guid ?? "");
+            });
         } catch (e: any) {
             setError(e.message);
         } finally {
@@ -79,192 +102,213 @@ const StylelinePage: React.FC = () => {
         fetchGroups();
     }, [fetchGroups]);
 
-
-    const handlePost = async () => {
-        if (!draft) return;
-        setLoading(true);
-        setError(null);
-        try {
-            const payload = {
-                stylegroupname: draft.stylegroupname,
-                stylegroupdescription: draft.stylegroupdescription,
-                createdby: LOGGED_IN_USER_ID,
-                modifiedby: LOGGED_IN_USER_ID,
-                lines: [
-                    {
-                        style: "3fa85f64-5717-4562-b3fc-",
-                        numberinbarcode: "st",
-                        stylegrouplinedisplayorder: 0,
-                        createdby: LOGGED_IN_USER_ID,
-                        modifiedby: LOGGED_IN_USER_ID,
-                    }
-                ],
-            };;
-
-            console.log("POST payload:", JSON.stringify(payload, null, 2));
-            const res = await fetch(`${API_BASE_URL}/api/Style/createStyleGroupNdLines`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
-
-            if (!res.ok) throw new Error(`POST failed: ${res.status}`);
-            setSuccessMsg("Style group created!");
-            setTimeout(() => setSuccessMsg(null), 3000);
-            setIsEditing(false);
-            setDraft(null);
-            await fetchGroups();
-        } catch (e: any) {
-            setError(e.message);
-        } finally {
-            setLoading(false);
-        }
+    // ── HELPERS ────────────────────────────────────────────────────────────
+    const showSuccess = (msg: string) => {
+        setSuccessMsg(msg);
+        setTimeout(() => setSuccessMsg(null), 3000);
     };
 
-    const handlePut = async () => {
-        if (!draft || !selected?.id) return;
-        setLoading(true);
-        setError(null);
-        try {
-            const payload = {
-                id: selected.id,
-                stylegroupname: draft.stylegroupname,
-                stylegroupdescription: draft.stylegroupdescription,
-                createdby: draft.createdby,
-                modifiedby: LOGGED_IN_USER_ID,
-                lines: draft.lines.map(l => ({
-                    style: l.style,
-                    numberinbarcode: l.numberinbarcode,
-                    stylegrouplinedisplayorder: l.stylegrouplinedisplayorder,
-                    createdby: l.createdby,
-                    modifiedby: LOGGED_IN_USER_ID,
-                })),
-            };
-
-            const res = await fetch(`${API_BASE_URL}/api/Size/updateSizeGroupById`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
-
-            if (!res.ok) throw new Error(`PUT failed: ${res.status}`);
-            setSuccessMsg("Style group updated!");
-            setTimeout(() => setSuccessMsg(null), 3000);
-            setIsEditing(false);
-            setDraft(null);
-
-
-            const currentId = selected?.id;
-            await fetchGroups();
-            // stay on same group after refresh — handled by id below
-        } catch (e: any) {
-            setError(e.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-
-    const handleDelete = async () => {
-
-        console.log("DELETE CLICKED");
-
-
-        if (!selected?.id) return;
-        if (!window.confirm("Delete this style group?")) return;
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            const res = await fetch(
-                `${API_BASE_URL}/api/Style/DeleteStyleGroupById?id=${selected.id}`,
-                {
-                    method: "DELETE",
-                }
-            );
-
-            if (!res.ok) throw new Error(`DELETE failed: ${res.status}`);
-
-            setSelectedGroupIdx(0);
-            await fetchGroups();
-        } catch (e: any) {
-            setError(e.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-
-    const handleSave = () => {
-        if (!draft) return;
-
-        if (selected?.id) {
-            handlePut();
-        } else {
-            handlePost();
-        }
-    };
-
-
+    // ── NEW ────────────────────────────────────────────────────────────────
+    // FIX 5: Don't push a fake blank into groups[] state.
+    // Just open an empty draft. On save → POST → fetchGroups fills the real item.
     const handleNew = () => {
-        const blank: StyleGroup = {
-            stylegroupname: "",
-            stylegroupdescription: "",
-            createdby: LOGGED_IN_USER_ID,
-            modifiedby: LOGGED_IN_USER_ID,
-            lines: [], // fresh array
-        };
-
-        setGroups(prev => [blank, ...prev]);
-        setSelectedGroupIdx(0);
-        setDraft({ ...blank, lines: [] });
+        setDraft(createEmptyGroup());
         setIsEditing(true);
+        setSelectedGuid("");
     };
 
+    // ── EDIT / CANCEL ──────────────────────────────────────────────────────
     const startEdit = () => {
-        if (selected) {
-            setDraft(JSON.parse(JSON.stringify(selected)));
-            setIsEditing(true);
-            setIsAddingLine(false);
-            setNewLine({ ...EMPTY_LINE });
-        }
+        if (!selected) return;
+        setDraft(JSON.parse(JSON.stringify(selected))); // deep clone
+        setIsEditing(true);
     };
 
     const cancelEdit = () => {
         setIsEditing(false);
         setDraft(null);
         setIsAddingLine(false);
-        setNewLine({ ...EMPTY_LINE });
-        if (!selected?.id) {
-            setGroups(prev => prev.filter((_, i) => i !== selectedGroupIdx));
-            setSelectedGroupIdx(0);
+        setNewLine(createEmptyLine());
+    };
+
+    // ── SAVE ───────────────────────────────────────────────────────────────
+    // FIX 6: Plain async function — no useCallback with stale deps.
+    // draft.GUID is empty string for new records, truthy GUID for existing ones.
+    const handleSave = async () => {
+        if (!draft) return;
+        if (draft.Guid) {
+            await handlePut();
+        } else {
+            await handlePost();
         }
     };
 
+    // ── POST ───────────────────────────────────────────────────────────────
+    // FIX 7: Lines are now included in the POST payload.
+    // REPLACE the entire handlePost function:
+    // REPLACE entire handlePost:
+    const handlePost = async () => {
+        if (!draft) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const payload = {
+                STYLEGROUPNAME: draft.STYLEGROUPNAME,
+                STYLEGROUPDESCRIPTION: draft.STYLEGROUPDESCRIPTION,
+                CREATEDBY: LOGGED_IN_USER_ID,
+                MODIFIEDBY: LOGGED_IN_USER_ID,
+                // Inside handlePost, change the Lines mapping:
+                Lines: draft.Lines.filter(l => l.STYLE.trim() !== "").map(l => ({
+                    STYLE: l.STYLE,
+                    NUMBERINBARCODE: l.NUMBERINBARCODE,
+                    STYLEGROUPLINEDISPLAYORDER: l.STYLEGROUPLINEDISPLAYORDER,
+                    CREATEDBY: LOGGED_IN_USER_ID,
+                    MODIFIEDBY: LOGGED_IN_USER_ID,
+                })),
+            };
+
+            const res = await fetch(STYLE_GROUP.CREATE, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) throw new Error(`POST failed: ${res.status}`);
+
+            let created: any = null;
+            try { created = await res.json(); } catch { }
+
+            showSuccess("Style group created!");
+            setIsEditing(false);
+            setDraft(null);
+            await fetchGroups();
+            if (created?.Guid) setSelectedGuid(created.Guid);
+
+        } catch (e: any) {
+            setError(e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ── PUT ────────────────────────────────────────────────────────────────
+    // FIX 9: Lines included in PUT payload too.
+    // REPLACE the entire handlePut function:
+    // REPLACE entire handlePut:
+    const handlePut = async () => {
+        if (!draft || !draft.Guid) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const payload = {
+                Guid: draft.Guid,
+                STYLEGROUPNAME: draft.STYLEGROUPNAME,
+                STYLEGROUPDESCRIPTION: draft.STYLEGROUPDESCRIPTION,
+                CREATEDBY: LOGGED_IN_USER_ID,
+                MODIFIEDBY: LOGGED_IN_USER_ID,
+                // Inside handlePost, change the Lines mapping:
+                Lines: draft.Lines.filter(l => l.STYLE.trim() !== "").map(l => ({
+                    STYLE: l.STYLE,
+                    NUMBERINBARCODE: l.NUMBERINBARCODE,
+                    STYLEGROUPLINEDISPLAYORDER: l.STYLEGROUPLINEDISPLAYORDER,
+                    CREATEDBY: LOGGED_IN_USER_ID,
+                    MODIFIEDBY: LOGGED_IN_USER_ID,
+                })),
+            };
+
+            const res = await fetch(STYLE_GROUP.UPDATE, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) throw new Error(`PUT failed: ${res.status}`);
+
+            showSuccess("Style group updated!");
+            setIsEditing(false);
+            setDraft(null);
+            await fetchGroups();
+
+        } catch (e: any) {
+            setError(e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ── DELETE GROUP ───────────────────────────────────────────────────────
+    const handleDelete = async () => {
+        if (!selected?.Guid) return;
+        if (!window.confirm(`Delete "${selected.STYLEGROUPNAME}"?`)) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await fetch(STYLE_GROUP.DELETE, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ Guid: selected.Guid }),
+            });
+            if (!res.ok) throw new Error(`DELETE failed: ${res.status}`);
+
+            // FIX 11: Clear Guid so fetchGroups picks first item automatically
+            setSelectedGuid("");
+            await fetchGroups();
+        } catch (e: any) {
+            setError(e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ── ADD LINE ───────────────────────────────────────────────────────────
     const handleAddLine = () => {
-        if (!newLine.style || !newLine.numberinbarcode) {
-            setError("Style and Number in Barcode are required.");
+        if (!draft) return;
+        if (!newLine.SIZE.trim()) {
+            setError("Size Guid is required.");
             return;
         }
         setDraft(prev =>
-            prev ? { ...prev, lines: [...prev.lines, { ...newLine }] } : prev
+            prev ? { ...prev, Lines: [...prev.Lines, { ...newLine }] } : prev
         );
-        setNewLine({ ...EMPTY_LINE });
+        setNewLine(createEmptyLine());
         setIsAddingLine(false);
-        setError(null);
     };
 
-    const handleDeleteLine = (lineIdx: number) => {
+    // ── DELETE LINE ────────────────────────────────────────────────────────
+    // REPLACE the entire handleDeleteLine function:
+    // REPLACE entire handleDeleteLine:
+    const handleDeleteLine = async (lineIdx: number) => {
+        if (!draft) return;
+        const line = draft.Lines[lineIdx];
+
+        if (line.Guid) {
+            // Already saved on server — delete it via API
+            setLoading(true);
+            try {
+                const res = await fetch(SIZE_GROUP.DELETE_LINE, {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ Guid: line.Guid }),
+                });
+                if (!res.ok) throw new Error(`Delete line failed: ${res.status}`);
+                showSuccess("Line deleted.");
+            } catch (e: any) {
+                setError(e.message);
+                setLoading(false);
+                return;
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Remove from draft (new unsaved line, or server delete succeeded)
         setDraft(prev =>
-            prev ? { ...prev, lines: prev.lines.filter((_, i) => i !== lineIdx) } : prev
+            prev ? { ...prev, Lines: prev.Lines.filter((_, i) => i !== lineIdx) } : prev
         );
     };
 
+    // ── RENDER ─────────────────────────────────────────────────────────────
     return (
         <div className="sgl-shell">
 
-            {/* TOASTS */}
             {error && (
                 <div className="sgl-toast sgl-toast-error" onClick={() => setError(null)}>
                     ⚠ {error}
@@ -276,10 +320,10 @@ const StylelinePage: React.FC = () => {
                 </div>
             )}
 
-            {/* COMMAND BAR */}
+            {/* ══ COMMAND BAR ══ */}
             <div className="sgl-commandBar">
-                {/* <button className="sgl-cmd-icon-btn">&#8592;</button>
-                <button className="sgl-cmd-icon-btn sgl-hamburger">&#9776;</button> */}
+                <button className="sgl-cmd-icon-btn">&#8592;</button>
+                <button className="sgl-cmd-icon-btn sgl-hamburger">&#9776;</button>
 
                 <div className="sgl-cmd-actions">
                     <button
@@ -299,8 +343,7 @@ const StylelinePage: React.FC = () => {
                     <button
                         className="sgl-cmd-btn"
                         onClick={handleDelete}
-                        // disabled={!selected?.id || loading}
-                        disabled={false}
+                        disabled={!selected?.Guid || loading}
                     >
                         <span>🗑</span> Delete
                     </button>
@@ -324,10 +367,10 @@ const StylelinePage: React.FC = () => {
                 </div>
             </div>
 
-            {/* BODY */}
+            {/* ══ BODY ══ */}
             <div className="sgl-body">
 
-                {/* SIDEBAR */}
+                {/* ══ SIDEBAR ══ */}
                 <div className="sgl-sidebar">
                     <div className="sgl-sidebar-filter">
                         <span className="sgl-filter-icon">&#128269;</span>
@@ -340,53 +383,44 @@ const StylelinePage: React.FC = () => {
                         />
                     </div>
                     <div className="sgl-sidebar-list">
-                        {groups
-                            .filter(g =>
-                                g.stylegroupname.toLowerCase().includes(filterText.toLowerCase()) ||
-                                g.stylegroupdescription?.toLowerCase().includes(filterText.toLowerCase())
-                            )
-                            .map((g, _filteredIdx) => {
-                                const realIdx = groups.indexOf(g);
-                                return (
-                                    <div
-                                        key={realIdx}
-                                        className={`sgl-sidebar-item ${selectedGroupIdx === realIdx ? "sgl-sidebar-item-active" : ""}`}
-                                        onClick={() => {
-                                            setSelectedGroupIdx(realIdx);
-                                            setIsEditing(false);
-                                            setDraft(null);
-                                            setIsAddingLine(false);
-                                            setNewLine({ ...EMPTY_LINE });
-                                        }}
-                                    >
-                                        <div className="sgl-item-code">{g.stylegroupname || "—"}</div>
-                                        <div className="sgl-item-desc">{g.stylegroupdescription || "No description"}</div>
-                                    </div>
-                                );
-                            })
-                        }
-                        {groups.length === 0 && !loading && (
+                        {/* FIX 12: Use filteredGroups, highlight by GUID not index */}
+                        {filteredGroups.map(g => (
+                            <div
+                                key={g.Guid || `name-${g.SIZEGROUPNAME}`}
+                                className={`sgl-sidebar-item ${selectedGuid === g.Guid ? "sgl-sidebar-item-active" : ""}`}
+                                onClick={() => {
+                                    setSelectedGuid(g.Guid);
+                                    setIsEditing(false);
+                                    setDraft(null);
+                                    setIsAddingLine(false);
+                                }}
+                            >
+                                <div className="sgl-item-code">{g.SIZEGROUPNAME || "—"}</div>
+                                <div className="sgl-item-desc">{g.SIZEGROUPDESCRIPTION || "No description"}</div>
+                            </div>
+                        ))}
+                        {filteredGroups.length === 0 && !loading && (
                             <div className="sgl-sidebar-empty">No records found</div>
                         )}
                     </div>
                 </div>
 
-                {/* DETAIL PANEL */}
+                {/* ══ DETAIL PANEL ══ */}
                 <div className="sgl-detail">
 
                     <div className="sgl-std-view">Standard view &#8964;</div>
-                    <h1 className="sgl-detail-title">Style Group</h1>
+                    <h1 className="sgl-detail-title">Size Group</h1>
 
-                    {/* Header Card */}
+                    {/* ── Header Card ── */}
                     <div className="sgl-header-card">
                         <div className="sgl-header-fields">
 
                             <div className="sgl-field-group">
-                                <label className="sgl-field-label">Style Group Name</label>
+                                <label className="sgl-field-label">Size Group Name</label>
                                 <input
                                     className="sgl-field-input sgl-field-medium"
-                                    value={displayGroup?.stylegroupname ?? ""}
-                                    onChange={e => setDraft(p => p ? { ...p, stylegroupname: e.target.value } : p)}
+                                    value={displayGroup?.SIZEGROUPNAME ?? ""}
+                                    onChange={e => setDraft(p => p ? { ...p, SIZEGROUPNAME: e.target.value } : p)}
                                     disabled={!isEditing}
                                     placeholder="Enter name"
                                 />
@@ -396,8 +430,8 @@ const StylelinePage: React.FC = () => {
                                 <label className="sgl-field-label">Description</label>
                                 <input
                                     className="sgl-field-input sgl-field-guid"
-                                    value={displayGroup?.stylegroupdescription ?? ""}
-                                    onChange={e => setDraft(p => p ? { ...p, stylegroupdescription: e.target.value } : p)}
+                                    value={displayGroup?.SIZEGROUPDESCRIPTION ?? ""}
+                                    onChange={e => setDraft(p => p ? { ...p, SIZEGROUPDESCRIPTION: e.target.value } : p)}
                                     disabled={!isEditing}
                                     placeholder="Enter description"
                                 />
@@ -410,7 +444,7 @@ const StylelinePage: React.FC = () => {
                                         onClick={startEdit}
                                         disabled={!selected}
                                     >
-                                        &#8212; Edit
+                                        &#9998; Edit
                                     </button>
                                 ) : (
                                     <button className="sgl-btn-secondary" onClick={cancelEdit}>
@@ -422,7 +456,66 @@ const StylelinePage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* LINES SECTION */}
+                    {/* ══ GENERAL SECTION ══ */}
+                    <div className="sgl-section">
+                        <div
+                            className="sgl-section-header"
+                            onClick={() => setGeneralOpen(v => !v)}
+                        >
+                            <span>General</span>
+                            <span className="sgl-chevron">{generalOpen ? "∧" : "∨"}</span>
+                        </div>
+
+                        {generalOpen && (
+                            <div className="sgl-section-body">
+                                <div className="sgl-general-grid">
+
+                                    <div className="sgl-gen-col">
+                                        <div className="sgl-col-title">INFORMATION</div>
+                                        <div className="sgl-field-group">
+                                            <label className="sgl-field-label">Size Group Name</label>
+                                            <input
+                                                className="sgl-field-input sgl-field-guid"
+                                                value={displayGroup?.SIZEGROUPNAME ?? ""}
+                                                disabled
+                                            />
+                                        </div>
+                                        <div className="sgl-field-group sgl-mt">
+                                            <label className="sgl-field-label">Description</label>
+                                            <input
+                                                className="sgl-field-input sgl-field-guid"
+                                                value={displayGroup?.SIZEGROUPDESCRIPTION ?? ""}
+                                                disabled
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="sgl-gen-col">
+                                        <div className="sgl-col-title">AUDIT</div>
+                                        <div className="sgl-field-group">
+                                            <label className="sgl-field-label">Created by</label>
+                                            <input
+                                                className="sgl-field-input sgl-field-guid"
+                                                value={displayGroup?.CREATEDBY ?? ""}
+                                                disabled
+                                            />
+                                        </div>
+                                        <div className="sgl-field-group sgl-mt">
+                                            <label className="sgl-field-label">Modified by</label>
+                                            <input
+                                                className="sgl-field-input sgl-field-guid"
+                                                value={displayGroup?.MODIFIEDBY ?? ""}
+                                                disabled
+                                            />
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ══ LINES SECTION ══ */}
                     <div className="sgl-section">
                         <div
                             className="sgl-section-header"
@@ -439,88 +532,85 @@ const StylelinePage: React.FC = () => {
                                     {isEditing && (
                                         <button
                                             className="sgl-add-btn"
-                                            onClick={() => setIsAddingLine(v => !v)}
+                                            onClick={() => {
+                                                setIsAddingLine(v => !v);
+                                                setNewLine(createEmptyLine());
+                                            }}
                                         >
                                             {isAddingLine ? "✕ Cancel" : "+ Add"}
                                         </button>
                                     )}
                                 </div>
 
+                                {isEditing && isAddingLine && (
+                                    <div className="sgl-add-line-form">
+                                        <div className="sgl-field-group">
+                                            <label className="sgl-field-label">Size</label>
+                                            <input
+                                                className="sgl-field-input sgl-field-guid"
+                                                placeholder="3fa85f64-..."
+                                                value={newLine.SIZE}
+                                                onChange={e => setNewLine(p => ({ ...p, SIZE: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div className="sgl-field-group">
+                                            <label className="sgl-field-label">Number in Barcode</label>
+                                            <input
+                                                className="sgl-field-input sgl-field-medium"
+                                                placeholder="e.g. ST001"
+                                                value={newLine.NUMBERINBARCODE}
+                                                onChange={e => setNewLine(p => ({ ...p, NUMBERINBARCODE: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div className="sgl-field-group">
+                                            <label className="sgl-field-label">Display Order</label>
+                                            <input
+                                                type="number"
+                                                className="sgl-field-input sgl-field-short"
+                                                value={newLine.SIZEGROUPLINEDISPLAYORDER}
+                                                onChange={e => setNewLine(p => ({ ...p, SIZEGROUPLINEDISPLAYORDER: Number(e.target.value) }))}
+                                            />
+                                        </div>
+                                        <div className="sgl-add-line-confirm">
+                                            <button className="sgl-btn-confirm" onClick={handleAddLine}>
+                                                ✓ Add Line
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <table className="sgl-table">
                                     <thead>
                                         <tr>
-                                            <th>Style</th>
+                                            <th>Size</th>
                                             <th>Number in Barcode</th>
                                             <th>Display Order</th>
                                             {isEditing && <th></th>}
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {/* Inline add line form */}
-                                        {isEditing && isAddingLine && (
-                                            <div className="sgl-add-line-form">
-                                                <div className="sgl-field-group">
-                                                    <label className="sgl-field-label">Style (GUID)</label>
-                                                    <input
-                                                        className="sgl-field-input sgl-field-guid"
-                                                        placeholder="3fa85f64-..."
-                                                        value={newLine.style}
-                                                        onChange={e => setNewLine(p => ({ ...p, style: e.target.value }))}
-                                                    />
-                                                </div>
-                                                <div className="sgl-field-group">
-                                                    <label className="sgl-field-label">Number in Barcode</label>
-                                                    <input
-                                                        className="sgl-field-input sgl-field-medium"
-                                                        placeholder="e.g. ST001"
-                                                        value={newLine.numberinbarcode}
-                                                        onChange={e => setNewLine(p => ({ ...p, numberinbarcode: e.target.value }))}
-                                                    />
-                                                </div>
-                                                <div className="sgl-field-group">
-                                                    <label className="sgl-field-label">Display Order</label>
-                                                    <input
-                                                        type="number"
-                                                        className="sgl-field-input sgl-field-short"
-                                                        value={newLine.stylegrouplinedisplayorder}
-                                                        onChange={e => setNewLine(p => ({ ...p, stylegrouplinedisplayorder: Number(e.target.value) }))}
-                                                    />
-                                                </div>
-                                                <div className="sgl-add-line-confirm">
-                                                    <button className="sgl-btn-confirm" onClick={handleAddLine}>
-                                                        ✓ Add Line
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
+                                        {/* FIX 13: displayGroup comes from selected (by GUID),
+                                            so Lines always belong to the clicked group only */}
+                                        {/* {(displayGroup?.Lines ?? []).map((l, i) => (
+                                            <tr key={i}> */}
+                                        {(displayGroup?.Lines ?? []).map((l, i) => (
+                                            <tr key={l.Guid || `line-${i}-${l.SIZE}`}>
+                                                <td className="sgl-guid-cell">{l.SIZE}</td>
+                                                <td>{l.NUMBERINBARCODE}</td>
+                                                <td>{l.SIZEGROUPLINEDISPLAYORDER}</td>
+                                                {isEditing && (
+                                                    <td>
+                                                        <button className="sgl-delete-line-btn" onClick={() => handleDeleteLine(i)} disabled={loading}>
 
-
-                                        {(displayGroup?.lines ?? []).map((l, i) => {
-                                            console.log("i", i);
-
-                                            return (
-                                                <tr key={l.style}>
-                                                    <td className="sgl-guid-cell">{l.style}</td>
-                                                    <td>{l.numberinbarcode}</td>
-                                                    <td>{l.stylegrouplinedisplayorder}</td>
-                                                    {isEditing && (
-                                                        <td>
-                                                            <button
-                                                                className="sgl-delete-line-btn"
-                                                                onClick={() => handleDeleteLine(i)}
-                                                            >
-                                                                🗑
-                                                            </button>
-                                                        </td>
-                                                    )}
-                                                </tr>)
-                                        })}
-                                        {(displayGroup?.lines ?? []).length === 0 && (
+                                                            🗑
+                                                        </button>
+                                                    </td>
+                                                )}
+                                            </tr>
+                                        ))}
+                                        {(displayGroup?.Lines ?? []).length === 0 && (
                                             <tr>
-                                                <td
-                                                    colSpan={isEditing ? 4 : 3}
-                                                    className="sgl-empty-row"
-                                                >
+                                                <td colSpan={isEditing ? 4 : 3} className="sgl-empty-row">
                                                     No lines added
                                                 </td>
                                             </tr>
@@ -551,54 +641,74 @@ export default StylelinePage;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // import React, { useState, useEffect, useCallback } from "react";
 // import "./StyleGroup.css";
 
 // // ──────────────────────────────────────────────
 // // INTERFACES
 // // ──────────────────────────────────────────────
-// interface StyleGroupLine {
-//     style: string;
-//     numberinbarcode: string;
-//     stylegrouplinedisplayorder: number;
-//     createdby: string;
-//     modifiedby: string;
-// }
-
 // interface StyleGroup {
-//     id?: string;
-//     stylegroupname: string;
-//     stylegroupdescription: string;
-//     createdby: string;
-//     modifiedby: string;
-//     lines: StyleGroupLine[];
+//     Guid: string;
+//     STYLEGROUPNAME: string;
+//     STYLEGROUPDESCRIPTION: string;
+//     CREATEDBY: string;
+//     MODIFIEDBY: string;
+//     Lines: StyleGroupLine[];
+
+// }interface StyleGroupLine {
+//     STYLE: string;
+//     NUMBERINBARCODE: string;
+//     STYLEGROUPLINEDISPLAYORDER: number;
+//     CREATEDBY: string;
+//     MODIFIEDBY: string;
 // }
 
-// // ──────────────────────────────────────────────
-// // CONSTANTS
-// // ──────────────────────────────────────────────
+
+
+
 // const LOGGED_IN_USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
-// const API_BASE_URL = "http://192.168.0.104";
+// const API_BASE_URL = "http://192.168.0.106";
 
 // const EMPTY_LINE: StyleGroupLine = {
-//     style: "",
-//     numberinbarcode: "",
-//     stylegrouplinedisplayorder: 0,
-//     createdby: LOGGED_IN_USER_ID,
-//     modifiedby: LOGGED_IN_USER_ID,
+//     STYLE: "",
+//     NUMBERINBARCODE: "",
+//     STYLEGROUPLINEDISPLAYORDER: 0,
+//     CREATEDBY: LOGGED_IN_USER_ID,
+//     MODIFIEDBY: LOGGED_IN_USER_ID,
 // };
 
 // const EMPTY_GROUP: StyleGroup = {
-//     stylegroupname: "",
-//     stylegroupdescription: "",
-//     createdby: LOGGED_IN_USER_ID,
-//     modifiedby: LOGGED_IN_USER_ID,
-//     lines: [],
+//     STYLEGROUPNAME: "",
+//     STYLEGROUPDESCRIPTION: "",
+//     CREATEDBY: LOGGED_IN_USER_ID,
+//     MODIFIEDBY: LOGGED_IN_USER_ID,
+//     Lines: [],
 // };
 
-// // ──────────────────────────────────────────────
-// // COMPONENT
-// // ──────────────────────────────────────────────
+
 // const StylelinePage: React.FC = () => {
 
 //     const [groups, setGroups] = useState<StyleGroup[]>([]);
@@ -617,9 +727,7 @@ export default StylelinePage;
 //     const selected = groups[selectedGroupIdx] ?? null;
 //     const displayGroup = isEditing && draft ? draft : selected;
 
-//     // ──────────────────────────────────────────────
-//     // GET
-//     // ──────────────────────────────────────────────
+
 //     const fetchGroups = useCallback(async () => {
 //         setLoading(true);
 //         setError(null);
@@ -654,25 +762,23 @@ export default StylelinePage;
 //         fetchGroups();
 //     }, [fetchGroups]);
 
-//     // ──────────────────────────────────────────────
-//     // POST
-//     // ──────────────────────────────────────────────
+
 //     const handlePost = async () => {
 //         if (!draft) return;
 //         setLoading(true);
 //         setError(null);
 //         try {
 //             const payload = {
-//                 stylegroupname: draft.stylegroupname,
-//                 stylegroupdescription: draft.stylegroupdescription,
-//                 createdby: LOGGED_IN_USER_ID,
-//                 modifiedby: LOGGED_IN_USER_ID,
-//                 lines: draft.lines.map(l => ({
-//                     style: l.style,
-//                     numberinbarcode: l.numberinbarcode,
-//                     stylegrouplinedisplayorder: l.stylegrouplinedisplayorder,
-//                     createdby: LOGGED_IN_USER_ID,
-//                     modifiedby: LOGGED_IN_USER_ID,
+//                 STYLEGROUPNAME: draft.STYLEGROUPNAME,
+//                 STYLEGROUPDESCRIPTION: draft.STYLEGROUPDESCRIPTION,
+//                 CREATEDBY: LOGGED_IN_USER_ID,
+//                 MODIFIEDBY: LOGGED_IN_USER_ID,
+//                 Lines: draft.Lines.map(l => ({
+//                     STYLE: l.STYLE,
+//                     NUMBERINBARCODE: l.NUMBERINBARCODE,
+//                     STYLEGROUPLINEDISPLAYORDER: l.STYLEGROUPLINEDISPLAYORDER,
+//                     CREATEDBY: LOGGED_IN_USER_ID,
+//                     MODIFIEDBY: LOGGED_IN_USER_ID,
 //                 })),
 //             };
 
@@ -697,22 +803,22 @@ export default StylelinePage;
 
 
 //     const handlePut = async () => {
-//         if (!draft || !selected?.id) return;
+//         if (!draft || !selected?.Guid) return;
 //         setLoading(true);
 //         setError(null);
 //         try {
 //             const payload = {
-//                 id: selected.id,
-//                 stylegroupname: draft.stylegroupname,
-//                 stylegroupdescription: draft.stylegroupdescription,
-//                 createdby: draft.createdby,
-//                 modifiedby: LOGGED_IN_USER_ID,
-//                 lines: draft.lines.map(l => ({
-//                     style: l.style,
-//                     numberinbarcode: l.numberinbarcode,
-//                     stylegrouplinedisplayorder: l.stylegrouplinedisplayorder,
-//                     createdby: l.createdby,
-//                     modifiedby: LOGGED_IN_USER_ID,
+//                 Guid: selected.Guid,
+//                 STYLEGROUPNAME: draft.STYLEGROUPNAME,
+//                 STYLEGROUPDESCRIPTION: draft.STYLEGROUPDESCRIPTION,
+//                 CREATEDBY: draft.CREATEDBY,
+//                 MODIFIEDBY: LOGGED_IN_USER_ID,
+//                 Lines: draft.Lines.map(l => ({
+//                     STYLE: l.STYLE,
+//                     NUMBERINBARCODE: l.NUMBERINBARCODE,
+//                     STYLEGROUPLINEDISPLAYORDER: l.STYLEGROUPLINEDISPLAYORDER,
+//                     CREATEDBY: l.CREATEDBY,
+//                     MODIFIEDBY: LOGGED_IN_USER_ID,
 //                 })),
 //             };
 
@@ -735,11 +841,9 @@ export default StylelinePage;
 //         }
 //     };
 
-//     // ──────────────────────────────────────────────
-//     // DELETE
-//     // ──────────────────────────────────────────────
+
 //     const handleDelete = async () => {
-//         if (!selected?.id) return;
+//         if (!selected?.Guid) return;
 //         if (!window.confirm("Delete this style group?")) return;
 //         setLoading(true);
 //         setError(null);
@@ -760,12 +864,10 @@ export default StylelinePage;
 //         }
 //     };
 
-//     // ──────────────────────────────────────────────
-//     // SAVE ROUTER — decides POST or PUT
-//     // ──────────────────────────────────────────────
+
 //     const handleSave = () => {
 //         if (!draft) return;
-//         if (draft.lines.length === 0) {
+//         if (draft.Lines.length === 0) {
 //             setError("Please add at least one line before saving.");
 //             return;
 //         }
@@ -776,9 +878,7 @@ export default StylelinePage;
 //         }
 //     };
 
-//     // ──────────────────────────────────────────────
-//     // LOCAL HELPERS
-//     // ──────────────────────────────────────────────
+
 //     const handleNew = () => {
 //         const blank = { ...EMPTY_GROUP };
 //         setGroups(prev => [blank, ...prev]);
@@ -804,12 +904,12 @@ export default StylelinePage;
 //     };
 
 //     const handleAddLine = () => {
-//         if (!newLine.style || !newLine.numberinbarcode) {
+//         if (!newLine.STYLE || !newLine.NUMBERINBARCODE) {
 //             setError("Style and Number in Barcode are required.");
 //             return;
 //         }
 //         setDraft(prev =>
-//             prev ? { ...prev, lines: [...prev.lines, { ...newLine }] } : prev
+//             prev ? { ...prev, Lines: [...prev.Lines, { ...newLine }] } : prev
 //         );
 //         setNewLine({ ...EMPTY_LINE });
 //         setIsAddingLine(false);
@@ -818,7 +918,7 @@ export default StylelinePage;
 
 //     const handleDeleteLine = (lineIdx: number) => {
 //         setDraft(prev =>
-//             prev ? { ...prev, lines: prev.lines.filter((_, i) => i !== lineIdx) } : prev
+//             prev ? { ...prev, Lines: prev.Lines.filter((_, i) => i !== lineIdx) } : prev
 //         );
 //     };
 
@@ -904,10 +1004,14 @@ export default StylelinePage;
 //                     </div>
 //                     <div className="sgl-sidebar-list">
 //                         {groups
-//                             .filter(g =>
-//                                 g.stylegroupname.toLowerCase().includes(filterText.toLowerCase()) ||
-//                                 g.stylegroupdescription?.toLowerCase().includes(filterText.toLowerCase())
-//                             )
+//                             .filter(g => {
+//                                 const name = g.STYLEGROUPNAME || "";
+//                                 const desc = g.STYLEGROUPDESCRIPTION || "";
+//                                 return (
+//                                     name.toLowerCase().includes(filterText.toLowerCase()) ||
+//                                     desc.toLowerCase().includes(filterText.toLowerCase())
+//                                 );
+//                             })
 //                             .map((g, idx) => (
 //                                 <div
 //                                     key={idx}
@@ -918,8 +1022,8 @@ export default StylelinePage;
 //                                         setDraft(null);
 //                                     }}
 //                                 >
-//                                     <div className="sgl-item-code">{g.stylegroupname || "—"}</div>
-//                                     <div className="sgl-item-desc">{g.stylegroupdescription || "No description"}</div>
+//                                     <div className="sgl-item-code">{g.STYLEGROUPNAME || "—"}</div>
+//                                     <div className="sgl-item-desc">{g.STYLEGROUPDESCRIPTION || "No description"}</div>
 //                                 </div>
 //                             ))
 //                         }
@@ -943,8 +1047,8 @@ export default StylelinePage;
 //                                 <label className="sgl-field-label">Style Group Name</label>
 //                                 <input
 //                                     className="sgl-field-input sgl-field-medium"
-//                                     value={displayGroup?.stylegroupname ?? ""}
-//                                     onChange={e => setDraft(p => p ? { ...p, stylegroupname: e.target.value } : p)}
+//                                     value={displayGroup?.STYLEGROUPNAME ?? ""}
+//                                     onChange={e => setDraft(p => p ? { ...p, STYLEGROUPNAME: e.target.value } : p)}
 //                                     disabled={!isEditing}
 //                                     placeholder="Enter name"
 //                                 />
@@ -954,8 +1058,8 @@ export default StylelinePage;
 //                                 <label className="sgl-field-label">Description</label>
 //                                 <input
 //                                     className="sgl-field-input sgl-field-guid"
-//                                     value={displayGroup?.stylegroupdescription ?? ""}
-//                                     onChange={e => setDraft(p => p ? { ...p, stylegroupdescription: e.target.value } : p)}
+//                                     value={displayGroup?.STYLEGROUPDESCRIPTION ?? ""}
+//                                     onChange={e => setDraft(p => p ? { ...p, STYLEGROUPDESCRIPTION: e.target.value } : p)}
 //                                     disabled={!isEditing}
 //                                     placeholder="Enter description"
 //                                 />
@@ -1002,7 +1106,7 @@ export default StylelinePage;
 //                                             <label className="sgl-field-label">Style Group Name</label>
 //                                             <input
 //                                                 className="sgl-field-input sgl-field-guid"
-//                                                 value={displayGroup?.stylegroupname ?? ""}
+//                                                 value={displayGroup?.STYLEGROUPNAME ?? ""}
 //                                                 disabled
 //                                             />
 //                                         </div>
@@ -1011,7 +1115,7 @@ export default StylelinePage;
 //                                             <label className="sgl-field-label">Description</label>
 //                                             <input
 //                                                 className="sgl-field-input sgl-field-guid"
-//                                                 value={displayGroup?.stylegroupdescription ?? ""}
+//                                                 value={displayGroup?.STYLEGROUPDESCRIPTION ?? ""}
 //                                                 disabled
 //                                             />
 //                                         </div>
@@ -1025,7 +1129,7 @@ export default StylelinePage;
 //                                             <label className="sgl-field-label">Created by</label>
 //                                             <input
 //                                                 className="sgl-field-input sgl-field-guid"
-//                                                 value={displayGroup?.createdby ?? ""}
+//                                                 value={displayGroup?.CREATEDBY ?? ""}
 //                                                 disabled
 //                                             />
 //                                         </div>
@@ -1034,7 +1138,7 @@ export default StylelinePage;
 //                                             <label className="sgl-field-label">Modified by</label>
 //                                             <input
 //                                                 className="sgl-field-input sgl-field-guid"
-//                                                 value={displayGroup?.modifiedby ?? ""}
+//                                                 value={displayGroup?.MODIFIEDBY ?? ""}
 //                                                 disabled
 //                                             />
 //                                         </div>
@@ -1077,8 +1181,8 @@ export default StylelinePage;
 //                                             <input
 //                                                 className="sgl-field-input sgl-field-guid"
 //                                                 placeholder="3fa85f64-..."
-//                                                 value={newLine.style}
-//                                                 onChange={e => setNewLine(p => ({ ...p, style: e.target.value }))}
+//                                                 value={newLine.STYLE}
+//                                                 onChange={e => setNewLine(p => ({ ...p, STYLE: e.target.value }))}
 //                                             />
 //                                         </div>
 //                                         <div className="sgl-field-group">
@@ -1086,8 +1190,8 @@ export default StylelinePage;
 //                                             <input
 //                                                 className="sgl-field-input sgl-field-medium"
 //                                                 placeholder="e.g. ST001"
-//                                                 value={newLine.numberinbarcode}
-//                                                 onChange={e => setNewLine(p => ({ ...p, numberinbarcode: e.target.value }))}
+//                                                 value={newLine.NUMBERINBARCODE}
+//                                                 onChange={e => setNewLine(p => ({ ...p, NUMBERINBARCODE: e.target.value }))}
 //                                             />
 //                                         </div>
 //                                         <div className="sgl-field-group">
@@ -1095,8 +1199,8 @@ export default StylelinePage;
 //                                             <input
 //                                                 type="number"
 //                                                 className="sgl-field-input sgl-field-short"
-//                                                 value={newLine.stylegrouplinedisplayorder}
-//                                                 onChange={e => setNewLine(p => ({ ...p, stylegrouplinedisplayorder: Number(e.target.value) }))}
+//                                                 value={newLine.STYLEGROUPLINEDISPLAYORDER}
+//                                                 onChange={e => setNewLine(p => ({ ...p, STYLEGROUPLINEDISPLAYORDER: Number(e.target.value) }))}
 //                                             />
 //                                         </div>
 //                                         <div className="sgl-add-line-confirm">
@@ -1117,11 +1221,11 @@ export default StylelinePage;
 //                                         </tr>
 //                                     </thead>
 //                                     <tbody>
-//                                         {(displayGroup?.lines ?? []).map((l, i) => (
+//                                         {(displayGroup?.Lines ?? []).map((l, i) => (
 //                                             <tr key={i}>
 //                                                 <td className="sgl-guid-cell">{l.style}</td>
-//                                                 <td>{l.numberinbarcode}</td>
-//                                                 <td>{l.stylegrouplinedisplayorder}</td>
+//                                                 <td>{l.NUMBERINBARCODE}</td>
+//                                                 <td>{l.STYLEGROUPLINEDISPLAYORDER}</td>
 //                                                 {isEditing && (
 //                                                     <td>
 //                                                         <button
@@ -1134,7 +1238,7 @@ export default StylelinePage;
 //                                                 )}
 //                                             </tr>
 //                                         ))}
-//                                         {(displayGroup?.lines ?? []).length === 0 && (
+//                                         {(displayGroup?.Lines ?? []).length === 0 && (
 //                                             <tr>
 //                                                 <td
 //                                                     colSpan={isEditing ? 4 : 3}
@@ -1158,3 +1262,9 @@ export default StylelinePage;
 // };
 
 // export default StylelinePage;
+
+
+
+
+
+
