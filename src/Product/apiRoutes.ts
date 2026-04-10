@@ -1,5 +1,5 @@
 // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-export const API_BASE_URL: string = "http://192.168.0.106";
+export const API_BASE_URL: string = "http://192.168.0.110";
 
 
 //  SIZE PAGE
@@ -38,22 +38,16 @@ export const STYLE_API = {
 
 // Style group
 export const STYLE_GROUP = {
-    GET_STYLE_GROUP: `${API_BASE_URL}/api/Style/GetStyleGroupsWithLines`,
-    CREATE_STYLE_GROUP: `${API_BASE_URL}/api/Style/createStyleGroup`,
-    UPDATE_STYLE_GROUP: `${API_BASE_URL}/api/Style/updateStyleGroupById`,
-    DELETE_STYLE_GROUP: `${API_BASE_URL}/api/Style/DeleteStyleGroupById`,
+    GET_ALL: `${API_BASE_URL}/api/Style/GetStyleGroupsWithLines`,
+    GET_ID: `${API_BASE_URL}/api/Style/GetStyleGroupById`,
+    CREATE: `${API_BASE_URL}/api/Style/createStyleGroupNdLines`,
+    UPDATE: `${API_BASE_URL}/api/Style/updateStyleGroupById`,
+    DELETE: `${API_BASE_URL}/api/Style/DeleteStyleById`,
+    DELETE_LINE: `${API_BASE_URL}/api/Style/DeleteStyleGroupLineById`,
 }
-
-export const STYLE_LINE = {
-    GET_STYLE_LINE: `${API_BASE_URL}/api/Style/GetStyleGroupsWithLines`,
-    CREATE_STYLE_LINE: `${API_BASE_URL}/api/Style/createStyleLine`,
-    // UPDATE_STYLE_LINE: `${API_BASE_URL}/api/Style/updateStyleLineById`,
-    DELETE_STYLE_LINE: `${API_BASE_URL}/api/Style/DeleteStyleGroupLineById`,
-}
-
-
 
 //ENUM PAGE
+
 export const ENUM_API = {
     GET_ENUMS: `${API_BASE_URL}/api/Enum/all`,
     CREATE_ENUM: `${API_BASE_URL}/api/Enum/create`,

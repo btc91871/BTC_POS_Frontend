@@ -190,28 +190,22 @@ const Sizegroup: React.FC = () => {
         }
     };
 
-    // ── PUT ────────────────────────────────────────────────────────────────
-    // FIX 9: Lines included in PUT payload too.
-    // REPLACE the entire handlePut function:
-    // REPLACE entire handlePut:
+
     const handlePut = async () => {
         if (!draft || !draft.Guid) return;
         setLoading(true);
         setError(null);
         try {
             const payload = {
-                Guid: draft.Guid,
+                GUID: draft.Guid,        // ← was "Guid: draft.Guid"
                 SIZEGROUPNAME: draft.SIZEGROUPNAME,
                 SIZEGROUPDESCRIPTION: draft.SIZEGROUPDESCRIPTION,
-                CREATEDBY: LOGGED_IN_USER_ID,
-                MODIFIEDBY: LOGGED_IN_USER_ID,
-                // Inside handlePost, change the Lines mapping:
-                Lines: draft.Lines.filter(l => l.SIZE.trim() !== "").map(l => ({
+                MODIFIEDBY: LOGGED_IN_USER_ID, // ← no CREATEDBY in PUT schema
+                Lines: draft.Lines.map(l => ({
                     SIZE: l.SIZE,
                     NUMBERINBARCODE: l.NUMBERINBARCODE,
                     SIZEGROUPLINEDISPLAYORDER: l.SIZEGROUPLINEDISPLAYORDER,
-                    CREATEDBY: LOGGED_IN_USER_ID,
-                    MODIFIEDBY: LOGGED_IN_USER_ID,
+                    MODIFIEDBY: LOGGED_IN_USER_ID, // ← no CREATEDBY in line either
                 })),
             };
 
@@ -259,17 +253,66 @@ const Sizegroup: React.FC = () => {
     };
 
     // ── ADD LINE ───────────────────────────────────────────────────────────
-    const handleAddLine = () => {
-        if (!draft) return;
+    // const handleAddLine = () => {
+    //     if (!draft) return;
+    //     if (!newLine.SIZE.trim()) {
+    //         setError("Size Guid is required.");
+    //         return;
+    //     }
+    //     setDraft(prev =>
+    //         prev ? { ...prev, Lines: [...prev.Lines, { ...newLine }] } : prev
+    //     );
+    //     setNewLine(createEmptyLine());
+    //     setIsAddingLine(false);
+    // };
+
+    const handleAddLine = async () => {
         if (!newLine.SIZE.trim()) {
-            setError("Size Guid is required.");
+            setError("Size GUID is required.");
             return;
         }
-        setDraft(prev =>
-            prev ? { ...prev, Lines: [...prev.Lines, { ...newLine }] } : prev
-        );
-        setNewLine(createEmptyLine());
-        setIsAddingLine(false);
+
+        if (draft?.Guid) {
+            // Group already exists on server → PUT with existing lines + new line
+            const updatedLines = [...(draft.Lines ?? []), { ...newLine }];
+            setLoading(true);
+            setError(null);
+            try {
+                const payload = {
+                    GUID: draft.Guid,        // ← was "Guid: draft.Guid"
+                    SIZEGROUPNAME: draft.SIZEGROUPNAME,
+                    SIZEGROUPDESCRIPTION: draft.SIZEGROUPDESCRIPTION,
+                    MODIFIEDBY: LOGGED_IN_USER_ID,
+                    Lines: updatedLines.map(l => ({
+                        SIZE: l.SIZE,
+                        NUMBERINBARCODE: l.NUMBERINBARCODE,
+                        SIZEGROUPLINEDISPLAYORDER: l.SIZEGROUPLINEDISPLAYORDER,
+                        MODIFIEDBY: LOGGED_IN_USER_ID,
+                    })),
+                };
+                const res = await fetch(SIZE_GROUP.UPDATE, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+                if (!res.ok) throw new Error(`PUT failed: ${res.status}`);
+                showSuccess("Line added!");
+                setIsAddingLine(false);
+                setNewLine(createEmptyLine());
+                await fetchGroups();
+            } catch (e: any) {
+                setError(e.message);
+            } finally {
+                setLoading(false);
+            }
+        } else if (draft) {
+            // New group not saved yet → just add to draft
+            setDraft(prev =>
+                prev ? { ...prev, Lines: [...prev.Lines, { ...newLine }] } : prev
+            );
+            setNewLine(createEmptyLine());
+            setIsAddingLine(false);
+        }
     };
 
     // ── DELETE LINE ────────────────────────────────────────────────────────
@@ -471,26 +514,6 @@ const Sizegroup: React.FC = () => {
                                 <div className="sgl-general-grid">
 
                                     <div className="sgl-gen-col">
-                                        <div className="sgl-col-title">INFORMATION</div>
-                                        <div className="sgl-field-group">
-                                            <label className="sgl-field-label">Size Group Name</label>
-                                            <input
-                                                className="sgl-field-input sgl-field-guid"
-                                                value={displayGroup?.SIZEGROUPNAME ?? ""}
-                                                disabled
-                                            />
-                                        </div>
-                                        <div className="sgl-field-group sgl-mt">
-                                            <label className="sgl-field-label">Description</label>
-                                            <input
-                                                className="sgl-field-input sgl-field-guid"
-                                                value={displayGroup?.SIZEGROUPDESCRIPTION ?? ""}
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="sgl-gen-col">
                                         <div className="sgl-col-title">AUDIT</div>
                                         <div className="sgl-field-group">
                                             <label className="sgl-field-label">Created by</label>
@@ -515,7 +538,6 @@ const Sizegroup: React.FC = () => {
                         )}
                     </div>
 
-                    {/* ══ LINES SECTION ══ */}
                     <div className="sgl-section">
                         <div
                             className="sgl-section-header"
@@ -529,7 +551,7 @@ const Sizegroup: React.FC = () => {
                             <div className="sgl-section-body">
 
                                 <div className="sgl-addr-toolbar">
-                                    {isEditing && (
+                                    {(isEditing || selected?.Guid) && (
                                         <button
                                             className="sgl-add-btn"
                                             onClick={() => {
@@ -542,7 +564,7 @@ const Sizegroup: React.FC = () => {
                                     )}
                                 </div>
 
-                                {isEditing && isAddingLine && (
+                                {isAddingLine && (
                                     <div className="sgl-add-line-form">
                                         <div className="sgl-field-group">
                                             <label className="sgl-field-label">Size</label>
@@ -598,7 +620,7 @@ const Sizegroup: React.FC = () => {
                                                 <td className="sgl-guid-cell">{l.SIZE}</td>
                                                 <td>{l.NUMBERINBARCODE}</td>
                                                 <td>{l.SIZEGROUPLINEDISPLAYORDER}</td>
-                                                {isEditing && (
+                                                {(isEditing || selected?.Guid) && (
                                                     <td>
                                                         <button className="sgl-delete-line-btn" onClick={() => handleDeleteLine(i)} disabled={loading}>
 

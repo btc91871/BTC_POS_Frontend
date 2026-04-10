@@ -57,7 +57,5 @@ export interface StyleGroupLine {
     STYLEGROUPLINEDISPLAYORDER: number;
     CREATEDBY: string;
     MODIFIEDBY: string;
-
-
-
+}
 

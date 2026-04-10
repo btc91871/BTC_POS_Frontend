@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
-import "./SizeGroup.css";
-import type { StyleGroup, StyleLineGroups } from "../productInterface.ts";
+import "./StyleGroup.css";
+import type { StyleGroup, StyleGroupLine } from "../productInterface.ts";
 import { API_BASE_URL, STYLE_API, STYLE_GROUP } from "../apiRoutes.ts";
 
 const LOGGED_IN_USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
 
 // const LOGGED_IN_USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
-const TEMP_SIZE_GUID = "dc6f5ec3-9591-4b39-9e78-a9a6a8d14e9b"; // ← remove when size picker is ready
+const TEMP_STYLE_GUID = "dc6f5ec3-9591-4b39-9e78-a9a6a8d14e9b"; // ← remove when size picker is ready
 
 const createEmptyGroup = (): StyleGroup => ({
     Guid: "",
@@ -17,9 +17,9 @@ const createEmptyGroup = (): StyleGroup => ({
     Lines: [],
 });
 
-const createEmptyLine = (): StyleLineGroups => ({
+const createEmptyLine = (): StyleGroupLine => ({
     Guid: "",
-    STYLE: TEMP_SIZE_GUID,
+    STYLE: TEMP_STYLE_GUID,
     NUMBERINBARCODE: "",
     STYLEGROUPLINEDISPLAYORDER: 0,
     CREATEDBY: LOGGED_IN_USER_ID,
@@ -40,7 +40,7 @@ const StyleGroup: React.FC = () => {
     const [generalOpen, setGeneralOpen] = useState<boolean>(true);
     const [detailsOpen, setDetailsOpen] = useState<boolean>(true);
     const [isAddingLine, setIsAddingLine] = useState<boolean>(false);
-    const [newLine, setNewLine] = useState<StyleLineGroups>(createEmptyLine());
+    const [newLine, setNewLine] = useState<StyleGroupLine>(createEmptyLine());
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -200,18 +200,15 @@ const StyleGroup: React.FC = () => {
         setError(null);
         try {
             const payload = {
-                Guid: draft.Guid,
+                GUID: draft.Guid,        // ← was "Guid: draft.Guid"
                 STYLEGROUPNAME: draft.STYLEGROUPNAME,
                 STYLEGROUPDESCRIPTION: draft.STYLEGROUPDESCRIPTION,
-                CREATEDBY: LOGGED_IN_USER_ID,
-                MODIFIEDBY: LOGGED_IN_USER_ID,
-                // Inside handlePost, change the Lines mapping:
-                Lines: draft.Lines.filter(l => l.STYLE.trim() !== "").map(l => ({
+                MODIFIEDBY: LOGGED_IN_USER_ID, // ← no CREATEDBY in PUT schema
+                Lines: draft.Lines.map(l => ({
                     STYLE: l.STYLE,
                     NUMBERINBARCODE: l.NUMBERINBARCODE,
                     STYLEGROUPLINEDISPLAYORDER: l.STYLEGROUPLINEDISPLAYORDER,
-                    CREATEDBY: LOGGED_IN_USER_ID,
-                    MODIFIEDBY: LOGGED_IN_USER_ID,
+                    MODIFIEDBY: LOGGED_IN_USER_ID, // ← no CREATEDBY in line either
                 })),
             };
 
@@ -259,22 +256,56 @@ const StyleGroup: React.FC = () => {
     };
 
     // ── ADD LINE ───────────────────────────────────────────────────────────
-    const handleAddLine = () => {
-        if (!draft) return;
-        if (!newLine.SIZE.trim()) {
-            setError("Size Guid is required.");
+    const handleAddLine = async () => {
+        if (!newLine.STYLE.trim()) {
+            setError("Style GUID is required.");
             return;
         }
-        setDraft(prev =>
-            prev ? { ...prev, Lines: [...prev.Lines, { ...newLine }] } : prev
-        );
-        setNewLine(createEmptyLine());
-        setIsAddingLine(false);
+
+        if (draft?.Guid) {
+            // Group already exists on server → PUT with existing lines + new line
+            const updatedLines = [...(draft.Lines ?? []), { ...newLine }];
+            setLoading(true);
+            setError(null);
+            try {
+                const payload = {
+                    GUID: draft.Guid,        // ← was "Guid: draft.Guid"
+                    STYLEGROUPNAME: draft.STYLEGROUPNAME,
+                    STYLEGROUPDESCRIPTION: draft.STYLEGROUPDESCRIPTION,
+                    MODIFIEDBY: LOGGED_IN_USER_ID,
+                    Lines: updatedLines.map(l => ({
+                        STYLE: l.STYLE,
+                        NUMBERINBARCODE: l.NUMBERINBARCODE,
+                        STYLEGROUPLINEDISPLAYORDER: l.STYLEGROUPLINEDISPLAYORDER,
+                        MODIFIEDBY: LOGGED_IN_USER_ID,
+                    })),
+                };
+                const res = await fetch(STYLE_GROUP.UPDATE, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+                if (!res.ok) throw new Error(`PUT failed: ${res.status}`);
+                showSuccess("Line added!");
+                setIsAddingLine(false);
+                setNewLine(createEmptyLine());
+                await fetchGroups();
+            } catch (e: any) {
+                setError(e.message);
+            } finally {
+                setLoading(false);
+            }
+        } else if (draft) {
+            // New group not saved yet → just add to draft
+            setDraft(prev =>
+                prev ? { ...prev, Lines: [...prev.Lines, { ...newLine }] } : prev
+            );
+            setNewLine(createEmptyLine());
+            setIsAddingLine(false);
+        }
     };
 
-    // ── DELETE LINE ────────────────────────────────────────────────────────
-    // REPLACE the entire handleDeleteLine function:
-    // REPLACE entire handleDeleteLine:
+
     const handleDeleteLine = async (lineIdx: number) => {
         if (!draft) return;
         const line = draft.Lines[lineIdx];
@@ -283,7 +314,7 @@ const StyleGroup: React.FC = () => {
             // Already saved on server — delete it via API
             setLoading(true);
             try {
-                const res = await fetch(SIZE_GROUP.DELETE_LINE, {
+                const res = await fetch(STYLE_GROUP.DELETE_LINE, {
                     method: "DELETE",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ Guid: line.Guid }),
@@ -386,7 +417,7 @@ const StyleGroup: React.FC = () => {
                         {/* FIX 12: Use filteredGroups, highlight by GUID not index */}
                         {filteredGroups.map(g => (
                             <div
-                                key={g.Guid || `name-${g.SIZEGROUPNAME}`}
+                                key={g.Guid || `name-${g.STYLEGROUPNAME}`}
                                 className={`sgl-sidebar-item ${selectedGuid === g.Guid ? "sgl-sidebar-item-active" : ""}`}
                                 onClick={() => {
                                     setSelectedGuid(g.Guid);
@@ -395,8 +426,8 @@ const StyleGroup: React.FC = () => {
                                     setIsAddingLine(false);
                                 }}
                             >
-                                <div className="sgl-item-code">{g.SIZEGROUPNAME || "—"}</div>
-                                <div className="sgl-item-desc">{g.SIZEGROUPDESCRIPTION || "No description"}</div>
+                                <div className="sgl-item-code">{g.STYLEGROUPNAME || "—"}</div>
+                                <div className="sgl-item-desc">{g.STYLEGROUPDESCRIPTION || "No description"}</div>
                             </div>
                         ))}
                         {filteredGroups.length === 0 && !loading && (
@@ -409,18 +440,18 @@ const StyleGroup: React.FC = () => {
                 <div className="sgl-detail">
 
                     <div className="sgl-std-view">Standard view &#8964;</div>
-                    <h1 className="sgl-detail-title">Size Group</h1>
+                    <h1 className="sgl-detail-title">Style Group</h1>
 
                     {/* ── Header Card ── */}
                     <div className="sgl-header-card">
                         <div className="sgl-header-fields">
 
                             <div className="sgl-field-group">
-                                <label className="sgl-field-label">Size Group Name</label>
+                                <label className="sgl-field-label">Style Group Name</label>
                                 <input
                                     className="sgl-field-input sgl-field-medium"
-                                    value={displayGroup?.SIZEGROUPNAME ?? ""}
-                                    onChange={e => setDraft(p => p ? { ...p, SIZEGROUPNAME: e.target.value } : p)}
+                                    value={displayGroup?.STYLEGROUPNAME ?? ""}
+                                    onChange={e => setDraft(p => p ? { ...p, STYLEGROUPNAME: e.target.value } : p)}
                                     disabled={!isEditing}
                                     placeholder="Enter name"
                                 />
@@ -430,8 +461,8 @@ const StyleGroup: React.FC = () => {
                                 <label className="sgl-field-label">Description</label>
                                 <input
                                     className="sgl-field-input sgl-field-guid"
-                                    value={displayGroup?.SIZEGROUPDESCRIPTION ?? ""}
-                                    onChange={e => setDraft(p => p ? { ...p, SIZEGROUPDESCRIPTION: e.target.value } : p)}
+                                    value={displayGroup?.STYLEGROUPDESCRIPTION ?? ""}
+                                    onChange={e => setDraft(p => p ? { ...p, STYLEGROUPDESCRIPTION: e.target.value } : p)}
                                     disabled={!isEditing}
                                     placeholder="Enter description"
                                 />
@@ -456,7 +487,7 @@ const StyleGroup: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* ══ GENERAL SECTION ══ */}
+
                     <div className="sgl-section">
                         <div
                             className="sgl-section-header"
@@ -473,10 +504,10 @@ const StyleGroup: React.FC = () => {
                                     <div className="sgl-gen-col">
                                         <div className="sgl-col-title">INFORMATION</div>
                                         <div className="sgl-field-group">
-                                            <label className="sgl-field-label">Size Group Name</label>
+                                            <label className="sgl-field-label">Style Group Name</label>
                                             <input
                                                 className="sgl-field-input sgl-field-guid"
-                                                value={displayGroup?.SIZEGROUPNAME ?? ""}
+                                                value={displayGroup?.STYLEGROUPNAME ?? ""}
                                                 disabled
                                             />
                                         </div>
@@ -484,7 +515,7 @@ const StyleGroup: React.FC = () => {
                                             <label className="sgl-field-label">Description</label>
                                             <input
                                                 className="sgl-field-input sgl-field-guid"
-                                                value={displayGroup?.SIZEGROUPDESCRIPTION ?? ""}
+                                                value={displayGroup?.STYLEGROUPDESCRIPTION ?? ""}
                                                 disabled
                                             />
                                         </div>
@@ -515,7 +546,7 @@ const StyleGroup: React.FC = () => {
                         )}
                     </div>
 
-                    {/* ══ LINES SECTION ══ */}
+
                     <div className="sgl-section">
                         <div
                             className="sgl-section-header"
@@ -545,12 +576,12 @@ const StyleGroup: React.FC = () => {
                                 {isEditing && isAddingLine && (
                                     <div className="sgl-add-line-form">
                                         <div className="sgl-field-group">
-                                            <label className="sgl-field-label">Size</label>
+                                            <label className="sgl-field-label">Style</label>
                                             <input
                                                 className="sgl-field-input sgl-field-guid"
                                                 placeholder="3fa85f64-..."
-                                                value={newLine.SIZE}
-                                                onChange={e => setNewLine(p => ({ ...p, SIZE: e.target.value }))}
+                                                value={newLine.STYLE}
+                                                onChange={e => setNewLine(p => ({ ...p, STYLE: e.target.value }))}
                                             />
                                         </div>
                                         <div className="sgl-field-group">
@@ -567,8 +598,8 @@ const StyleGroup: React.FC = () => {
                                             <input
                                                 type="number"
                                                 className="sgl-field-input sgl-field-short"
-                                                value={newLine.SIZEGROUPLINEDISPLAYORDER}
-                                                onChange={e => setNewLine(p => ({ ...p, SIZEGROUPLINEDISPLAYORDER: Number(e.target.value) }))}
+                                                value={newLine.STYLEGROUPLINEDISPLAYORDER}
+                                                onChange={e => setNewLine(p => ({ ...p, STYLEGROUPLINEDISPLAYORDER: Number(e.target.value) }))}
                                             />
                                         </div>
                                         <div className="sgl-add-line-confirm">
@@ -582,22 +613,19 @@ const StyleGroup: React.FC = () => {
                                 <table className="sgl-table">
                                     <thead>
                                         <tr>
-                                            <th>Size</th>
+                                            <th>Style</th>
                                             <th>Number in Barcode</th>
                                             <th>Display Order</th>
                                             {isEditing && <th></th>}
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {/* FIX 13: displayGroup comes from selected (by GUID),
-                                            so Lines always belong to the clicked group only */}
-                                        {/* {(displayGroup?.Lines ?? []).map((l, i) => (
-                                            <tr key={i}> */}
+
                                         {(displayGroup?.Lines ?? []).map((l, i) => (
-                                            <tr key={l.Guid || `line-${i}-${l.SIZE}`}>
-                                                <td className="sgl-guid-cell">{l.SIZE}</td>
+                                            <tr key={l.Guid || `line-${i}-${l.STYLE}`}>
+                                                <td className="sgl-guid-cell">{l.STYLE}</td>
                                                 <td>{l.NUMBERINBARCODE}</td>
-                                                <td>{l.SIZEGROUPLINEDISPLAYORDER}</td>
+                                                <td>{l.STYLEGROUPLINEDISPLAYORDER}</td>
                                                 {isEditing && (
                                                     <td>
                                                         <button className="sgl-delete-line-btn" onClick={() => handleDeleteLine(i)} disabled={loading}>
@@ -628,7 +656,7 @@ const StyleGroup: React.FC = () => {
     );
 };
 
-export default StylelinePage;
+export default StyleGroup;
 
 
 
