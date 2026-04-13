@@ -1,5 +1,5 @@
 // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-export const API_BASE_URL: string = "http://192.168.0.110";
+export const API_BASE_URL: string = "http://192.168.0.104";
 
 
 //  SIZE PAGE
@@ -18,6 +18,7 @@ export const SIZE_GROUP = {
     UPDATE: `${API_BASE_URL}/api/Size/updateSizeGroupById`,
     DELETE: `${API_BASE_URL}/api/Size/DeleteSizeGroupById`,
     DELETE_LINE: `${API_BASE_URL}/api/Size/DeleteSizeGroupLineById`,
+
 }
 
 // export const SIZE_LINE = {

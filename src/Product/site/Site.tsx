@@ -1,70 +1,493 @@
+import React, { useState, useEffect } from "react";
+import "./Site.css";
+
+// ─── Site record (matches GET Data array items) ────────────────────────────
+interface SiteRecord {
+    Guid: string;
+    SITEID: string;
+    SITENAME: string;
+    DESCRIPTION: string;
+    DATAAREAID: string;
+}
+
+// ─── API wrapper (every response has this shape) ───────────────────────────
+interface ApiResponse<T> {
+    Success: boolean;
+    Message: string;
+    Data: T;
+    Errors: string[] | null;
+}
+
+// ─── Constants ─────────────────────────────────────────────────────────────
+const LOGGED_IN_USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
+const API_BASE_URL = "http://192.168.0.104";
+const DATA_AREA_ID = "IND";
+
+const EMPTY_SITE: SiteRecord = {
+    Guid: "",
+    SITEID: "",
+    SITENAME: "",
+    DESCRIPTION: "",
+    DATAAREAID: DATA_AREA_ID,
+};
+
+// ─── Main Component ─────────────────────────────────────────────────────────
+const SitesPage: React.FC = () => {
+
+    const [sites, setSites] = useState<SiteRecord[]>([]);
+    const [selectedSite, setSelectedSite] = useState<SiteRecord | null>(null);
+    const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+    const [form, setForm] = useState<SiteRecord>({ ...EMPTY_SITE });
+    const [filterText, setFilterText] = useState<string>("");
+    const [isNew, setIsNew] = useState<boolean>(false);
+    const [isEditing, setIsEditing] = useState<boolean>(false);
+    const [successMsg, setSuccessMsg] = useState<string>("");
+    const [errorMsg, setErrorMsg] = useState<string>("");
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [pageLoading, setPageLoading] = useState<boolean>(true);
+
+    // ── GET: Load all sites on mount ────────────────────────────────────────
+    useEffect(() => {
+        const fetchSites = async () => {
+            try {
+                setPageLoading(true);
+
+                const res = await fetch(
+                    `${API_BASE_URL}/api/Site/GetByDataAreaID?dataAreaId=${DATA_AREA_ID}`,
+                    { headers: { "accept": "*/*" } }
+                );
+
+                if (!res.ok) throw new Error(`GET failed: ${res.status}`);
+
+                const json: ApiResponse<SiteRecord[]> = await res.json();
+                if (!json.Success) throw new Error(json.Message || "Failed to load sites.");
+
+                const data = json.Data;
+                setSites(data);
+
+                if (data.length > 0) {
+                    setSelectedSite(data[0]);
+                    setSelectedIndex(0);
+                    setForm({ ...data[0] });
+                }
+
+            } catch (err) {
+                setErrorMsg(err instanceof Error ? err.message : "Could not load sites.");
+                console.error(err);
+            } finally {
+                setPageLoading(false);
+            }
+        };
+
+        fetchSites();
+    }, []);
+
+    // ── Form field change ───────────────────────────────────────────────────
+    const handleFormChange = (field: keyof SiteRecord, value: string) => {
+        setForm(prev => ({ ...prev, [field]: value }));
+    };
+
+    // ── Select site from sidebar ────────────────────────────────────────────
+    const handleSelectSite = (site: SiteRecord, index: number) => {
+        if (isNew || isEditing) return;
+        setSelectedSite(site);
+        setSelectedIndex(index);
+        setForm({ ...site });
+        setErrorMsg("");
+    };
+
+    // ── New button ──────────────────────────────────────────────────────────
+    const handleNew = () => {
+        setIsNew(true);
+        setIsEditing(false);
+        setSelectedSite(null);
+        setSelectedIndex(-1);
+        setForm({ ...EMPTY_SITE });
+        setErrorMsg("");
+    };
+
+    // ── Edit button ─────────────────────────────────────────────────────────
+    const handleEdit = () => {
+        if (!selectedSite) return;
+        setIsEditing(true);
+        setIsNew(false);
+        setErrorMsg("");
+    };
+
+    // ── Cancel button ───────────────────────────────────────────────────────
+    const handleCancel = () => {
+        setIsNew(false);
+        setIsEditing(false);
+        setErrorMsg("");
+        if (selectedSite) setForm({ ...selectedSite });
+    };
+
+    // ── POST: Create new site ───────────────────────────────────────────────
+    const handleCreate = async () => {
+        if (!form.SITEID.trim()) { setErrorMsg("Site ID is required."); return; }
+        if (!form.SITENAME.trim()) { setErrorMsg("Site Name is required."); return; }
+
+        setIsLoading(true);
+        setErrorMsg("");
+
+        try {
+            const postBody = {
+                SiteGUID: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                SiteID: form.SITEID,
+                SiteName: form.SITENAME,
+                Description: form.DESCRIPTION,
+                DataAreaID: DATA_AREA_ID,
+                CreatedBy: LOGGED_IN_USER_ID,
+                ModifiedBy: LOGGED_IN_USER_ID,
+            };
+
+            const res = await fetch(`${API_BASE_URL}/api/Site/create`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "accept": "*/*" },
+                body: JSON.stringify(postBody),
+            });
+
+            if (!res.ok) throw new Error(`POST failed: ${res.status}`);
+
+            const json: ApiResponse<{ SiteGUID: string; SiteID: string; SiteName: string }> = await res.json();
+            if (!json.Success) throw new Error(json.Message || "Failed to create site.");
+
+            const newRecord: SiteRecord = {
+                Guid: json.Data.SiteGUID,
+                SITEID: json.Data.SiteID,
+                SITENAME: json.Data.SiteName,
+                DESCRIPTION: form.DESCRIPTION,
+                DATAAREAID: DATA_AREA_ID,
+            };
+
+            const updatedSites = [...sites, newRecord];
+            setSites(updatedSites);
+            setSelectedSite(newRecord);
+            setSelectedIndex(updatedSites.length - 1);
+            setIsNew(false);
+            showSuccess(json.Message || `Site "${form.SITEID}" created.`);
+
+        } catch (err) {
+            setErrorMsg(err instanceof Error ? err.message : "Something went wrong.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // ── PUT: Update existing site ───────────────────────────────────────────
+    const handleUpdate = async () => {
+        if (!form.SITEID.trim()) { setErrorMsg("Site ID is required."); return; }
+        if (!form.SITENAME.trim()) { setErrorMsg("Site Name is required."); return; }
+        if (!selectedSite) return;
+
+        // Log so we can see exactly what GUID is being sent
+        console.log("Updating site with GUID:", selectedSite.Guid);
+
+        setIsLoading(true);
+        setErrorMsg("");
+
+        try {
+            // PUT body — GUID comes from the selectedSite loaded from GET, not hardcoded
+            const putBody = {
+                SiteGUID: selectedSite.Guid,   // 🔥 FIXED
+                SiteID: form.SITEID,
+                SiteName: form.SITENAME,
+                Description: form.DESCRIPTION,
+                DataAreaID: form.DATAAREAID,
+                ModifiedBy: LOGGED_IN_USER_ID, // 🔥 often required
+            };
+
+            console.log("PUT body:", putBody);
+            console.log("GUID being sent:", selectedSite.Guid);
+
+            const res = await fetch(`${API_BASE_URL}/api/Site/updateSiteById`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", "accept": "*/*" },
+                body: JSON.stringify(putBody),
+            });
+
+            if (!res.ok) throw new Error(`PUT failed: ${res.status}`);
+
+            const json: ApiResponse<unknown> = await res.json();
+
+            // Show API error details if it fails
+            if (!json.Success) {
+                const detail = json.Errors ? json.Errors[0] : json.Message;
+                throw new Error(detail || "Failed to update site.");
+            }
+
+            // Update the site in local list
+            const updatedRecord: SiteRecord = { ...form, Guid: selectedSite.Guid };
+            const updatedSites = sites.map((s, i) => i === selectedIndex ? updatedRecord : s);
+            setSites(updatedSites);
+            setSelectedSite(updatedRecord);
+            setIsEditing(false);
+            showSuccess(json.Message || `Site "${form.SITEID}" updated.`);
+
+        } catch (err) {
+            setErrorMsg(err instanceof Error ? err.message : "Something went wrong.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // ── DELETE: Delete selected site ────────────────────────────────────────
+    const handleDelete = async () => {
+        if (!selectedSite) return;
+        if (!window.confirm(`Delete site "${selectedSite.SITEID}"?`)) return;
+
+        console.log("Deleting site with GUID:", selectedSite.Guid);
+
+        setIsLoading(true);
+        setErrorMsg("");
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/Site/DeleteSiteById`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json", "accept": "*/*" },
+                body: JSON.stringify({ SiteGUID: selectedSite.Guid }),
+            });
+
+            if (!res.ok) throw new Error(`DELETE failed: ${res.status}`);
+
+            const json: ApiResponse<unknown> = await res.json();
+
+            if (!json.Success) {
+                const detail = json.Errors ? json.Errors[0] : json.Message;
+                throw new Error(detail || "Failed to delete site.");
+            }
+
+            const updatedSites = sites.filter((_, i) => i !== selectedIndex);
+            setSites(updatedSites);
+
+            const next = updatedSites[0] ?? null;
+            setSelectedSite(next);
+            setSelectedIndex(next ? 0 : -1);
+            setForm(next ? { ...next } : { ...EMPTY_SITE });
+
+            showSuccess(json.Message || "Site deleted.");
+
+        } catch (err) {
+            setErrorMsg(err instanceof Error ? err.message : "Failed to delete.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // ── Save — routes to create or update ──────────────────────────────────
+    const handleSave = () => {
+        if (isNew) handleCreate();
+        else if (isEditing) handleUpdate();
+    };
+
+    const showSuccess = (msg: string) => {
+        setSuccessMsg(msg);
+        setTimeout(() => setSuccessMsg(""), 3000);
+    };
+
+    const formIsEditable = isNew || isEditing;
+
+    const filteredSites = sites.filter(site =>
+        site.SITEID.toLowerCase().includes(filterText.toLowerCase()) ||
+        site.SITENAME.toLowerCase().includes(filterText.toLowerCase())
+    );
+
+    // ─── Render ─────────────────────────────────────────────────────────────
+    return (
+        <div className="s-shell">
+
+            {/* Command bar */}
+            <div className="s-commandBar">
+                <button className="s-cmd-icon-btn" title="Back">&#8592;</button>
+                <button className="s-cmd-icon-btn s-cmd-hamburger">&#9776;</button>
+
+                <div className="s-cmd-actions">
+                    <button
+                        className="s-cmd-btn s-cmd-save"
+                        onClick={handleSave}
+                        disabled={isLoading || (!isNew && !isEditing)}
+                    >
+                        <span>&#128190;</span> Save
+                    </button>
+                    <button
+                        className="s-cmd-btn"
+                        onClick={handleNew}
+                        disabled={isLoading || isNew || isEditing}
+                    >
+                        <span>+</span> New
+                    </button>
+                    <button
+                        className="s-cmd-btn"
+                        onClick={handleDelete}
+                        disabled={isLoading || !selectedSite || isNew || isEditing}
+                    >
+                        <span>🗑</span> Delete
+                    </button>
+                </div>
+
+                <div className="s-cmd-divider" />
+                <span className="s-cmd-tab s-cmd-tab-active">Options</span>
+            </div>
+
+            {/* Body */}
+            <div className="s-body">
+
+                {/* Sidebar */}
+                <div className="s-sidebar">
+                    <div className="s-sidebar-filter">
+                        <span className="s-filter-icon">&#128269;</span>
+                        <input
+                            type="text"
+                            placeholder="Filter"
+                            value={filterText}
+                            onChange={e => setFilterText(e.target.value)}
+                            className="s-filter-input"
+                        />
+                    </div>
+
+                    <div className="s-sidebar-list">
+
+                        {pageLoading && <p className="s-loading">Loading...</p>}
+
+                        {isNew && (
+                            <div className="s-sidebar-item s-sidebar-item-active">
+                                <div className="s-item-code">{form.SITEID || "NEW"}</div>
+                                <div className="s-item-desc">{form.SITENAME || "New site"}</div>
+                            </div>
+                        )}
+
+                        {filteredSites.map((site, index) => (
+                            <div
+                                key={site.Guid || index}
+                                className={`s-sidebar-item ${selectedIndex === index && !isNew ? "s-sidebar-item-active" : ""}`}
+                                onClick={() => handleSelectSite(site, index)}
+                            >
+                                <div className="s-item-code">{site.SITEID}</div>
+                                <div className="s-item-desc">{site.SITENAME}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Detail panel */}
+                <div className="s-detail">
+                    <div className="s-std-view">Standard view &#8964;</div>
+                    <h1 className="s-detail-title">Site</h1>
+
+                    {successMsg && <div className="s-successBar">✓ {successMsg}</div>}
+                    {errorMsg && <div className="s-errorBar">⚠ {errorMsg}</div>}
+
+                    <div className="s-header-card">
+                        <div className="s-header-fields">
+
+                            <div className="s-field-group">
+                                <label className="s-field-label">Site ID</label>
+                                <input
+                                    className={`s-field-input s-field-short ${formIsEditable ? "s-active" : ""}`}
+                                    value={form.SITEID}
+                                    onChange={e => handleFormChange("SITEID", e.target.value)}
+                                    disabled={!formIsEditable}
+                                    placeholder="Site ID"
+                                />
+                            </div>
+
+                            <div className="s-field-group">
+                                <label className="s-field-label">Name</label>
+                                <input
+                                    className={`s-field-input s-field-wide ${formIsEditable ? "s-active" : ""}`}
+                                    value={form.SITENAME}
+                                    onChange={e => handleFormChange("SITENAME", e.target.value)}
+                                    disabled={!formIsEditable}
+                                    placeholder="Site name"
+                                />
+                            </div>
+
+                            <div className="s-field-group">
+                                <label className="s-field-label">Description</label>
+                                <input
+                                    className={`s-field-input s-field-wide ${formIsEditable ? "s-active" : ""}`}
+                                    value={form.DESCRIPTION}
+                                    onChange={e => handleFormChange("DESCRIPTION", e.target.value)}
+                                    disabled={!formIsEditable}
+                                    placeholder="Description"
+                                />
+                            </div>
+
+                        </div>
+
+                        <div className="s-header-actions">
+                            {!isNew && !isEditing && selectedSite && (
+                                <button className="s-btn-secondary" onClick={handleEdit} disabled={isLoading}>
+                                    ✏ Edit
+                                </button>
+                            )}
+                            {(isNew || isEditing) && (
+                                <button className="s-btn-secondary" onClick={handleCancel} disabled={isLoading}>
+                                    Cancel
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    );
+};
+
+export default SitesPage;
+
+
+
+
+
+
+
+
+
+
+
 // import React, { useState, useEffect } from "react";
 // import "./Site.css";
 
-
+// // ─── Site record (matches GET Data array items) ────────────────────────────
 // interface SiteRecord {
-//     siteGUID: string;
-//     siteID: string;
-//     siteName: string;
-//     description: string;
-//     dataAreaID: string;
-//     createdBy: string;
-//     modifiedBy: string;
+//     Guid: string;
+//     SITEID: string;
+//     SITENAME: string;
+//     DESCRIPTION: string;
+//     DATAAREAID: string;
 // }
 
+// // ─── API wrapper (every response has this shape) ───────────────────────────
+// interface ApiResponse<T> {
+//     Success: boolean;
+//     Message: string;
+//     Data: T;
+//     Errors: string | null;
+// }
 
-
+// // ─── Constants ─────────────────────────────────────────────────────────────
 // const LOGGED_IN_USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
-// const API_BASE_URL = "http://192.168.0.104";
-
-// // const EMPTY_ADDRESS: Address = {
-// //     partyType: 0,
-// //     partyID: "",
-// //     address: "",
-// //     addressType: 0,
-// //     city: "",
-// //     state: "",
-// //     country: "",
-// //     postalCode: "",
-// //     isActive: true,
-// // };
+// const API_BASE_URL = "http://192.168.0.105";
+// const DATA_AREA_ID = "IND";
 
 // const EMPTY_SITE: SiteRecord = {
-//     siteGUID: "",
-//     siteID: "",
-//     siteName: "",
-//     description: "",
-//     dataAreaID: "",
-//     createdBy: LOGGED_IN_USER_ID,
-//     modifiedBy: LOGGED_IN_USER_ID,
-//     // addresses: [],
+//     Guid: "",
+//     SITEID: "",
+//     SITENAME: "",
+//     DESCRIPTION: "",
+//     DATAAREAID: DATA_AREA_ID,
 // };
 
-
-// const Toggle: React.FC<{
-//     value: boolean;
-//     onChange?: () => void;
-//     disabled?: boolean;
-// }> = ({ value, onChange, disabled }) => (
-//     <button
-//         type="button"
-//         className={`s-toggle ${value ? "s-toggle-on" : "s-toggle-off"}`}
-//         onClick={!disabled ? onChange : undefined}
-//         disabled={disabled}
-//     >
-//         <span className="s-toggle-thumb" />
-//     </button>
-// );
-
-// // ──────────────────────────────────────────────
-// // MAIN COMPONENT
-// // ──────────────────────────────────────────────
+// // ─── Main Component ─────────────────────────────────────────────────────────
 // const SitesPage: React.FC = () => {
 
-//     const [records, setRecords] = useState<SiteRecord[]>([]);
-//     const [selected, setSelected] = useState<SiteRecord | null>(null);
-//     const [selectedIdx, setSelectedIdx] = useState<number>(-1);
-//     const [formData, setFormData] = useState<SiteRecord>({ ...EMPTY_SITE });
+//     const [sites, setSites] = useState<SiteRecord[]>([]);
+//     const [selectedSite, setSelectedSite] = useState<SiteRecord | null>(null);
+//     const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+//     const [form, setForm] = useState<SiteRecord>({ ...EMPTY_SITE });
 //     const [filterText, setFilterText] = useState<string>("");
 //     const [isNew, setIsNew] = useState<boolean>(false);
 //     const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -73,157 +496,215 @@
 //     const [isLoading, setIsLoading] = useState<boolean>(false);
 //     const [pageLoading, setPageLoading] = useState<boolean>(true);
 
-//     // Address modal state
-//     const [showAddressModal, setShowAddressModal] = useState<boolean>(false);
-//     // const [addressForm, setAddressForm] = useState<Address>({ ...EMPTY_ADDRESS });
-//     const [editAddressIdx, setEditAddressIdx] = useState<number>(-1); // -1 = new address
-
-//     // Section collapse state
-//     const [generalOpen, setGeneralOpen] = useState<boolean>(true);
-//     const [addressesOpen, setAddressesOpen] = useState<boolean>(true);
-
-//     // ── GET all sites on load ──
+//     // ── GET: Load all sites on mount ────────────────────────────────────────
 //     useEffect(() => {
-//         const load = async () => {
+//         const fetchSites = async () => {
 //             try {
 //                 setPageLoading(true);
-//                 const res = await fetch(`${API_BASE_URL}/api/Site/GetByDataAreaID`, {
-//                     headers: { "accept": "*/*" },
-//                 });
-//                 if (!res.ok) throw new Error("Failed to fetch sites.");
-//                 const data: SiteRecord[] = await res.json();
-//                 setRecords(data);
+
+//                 const res = await fetch(
+//                     `${API_BASE_URL}/api/Site/GetByDataAreaID?dataAreaId=${DATA_AREA_ID}`,
+//                     { headers: { "accept": "*/*" } }
+//                 );
+
+//                 if (!res.ok) throw new Error(`GET failed: ${res.status}`);
+
+//                 const json: ApiResponse<SiteRecord[]> = await res.json();
+
+//                 if (!json.Success) throw new Error(json.Message || "Failed to load sites.");
+
+//                 const data = json.Data;
+//                 setSites(data);
+
 //                 if (data.length > 0) {
-//                     setSelected(data[0]);
-//                     setSelectedIdx(0);
-//                     setFormData({ ...data[0] });
+//                     setSelectedSite(data[0]);
+//                     setSelectedIndex(0);
+//                     setForm({ ...data[0] });
 //                 }
+
 //             } catch (err) {
-//                 setErrorMsg("Could not load sites. Please refresh.");
+//                 setErrorMsg(err instanceof Error ? err.message : "Could not load sites.");
 //                 console.error(err);
 //             } finally {
 //                 setPageLoading(false);
 //             }
 //         };
-//         load();
+
+//         fetchSites();
 //     }, []);
 
-//     // ── Select site from sidebar ──
-//     const handleSelectSite = (site: SiteRecord, idx: number) => {
+//     // ── Form field change ───────────────────────────────────────────────────
+//     const handleFormChange = (field: keyof SiteRecord, value: string) => {
+//         setForm(prev => ({ ...prev, [field]: value }));
+//     };
+
+//     // ── Select site from sidebar ────────────────────────────────────────────
+//     const handleSelectSite = (site: SiteRecord, index: number) => {
 //         if (isNew || isEditing) return;
-//         setSelected(site);
-//         setSelectedIdx(idx);
-//         // setFormData({ ...site, addresses: site.addresses ? [...site.addresses] : [] });
+//         setSelectedSite(site);
+//         setSelectedIndex(index);
+//         setForm({ ...site });
 //         setErrorMsg("");
 //     };
 
-//     // ── Form field change ──
-//     const handleChange = (field: keyof SiteRecord, value: string) => {
-//         setFormData(prev => ({ ...prev, [field]: value }));
-//     };
-
-//     // ── + New ──
+//     // ── New button ──────────────────────────────────────────────────────────
 //     const handleNew = () => {
 //         setIsNew(true);
 //         setIsEditing(false);
-//         setSelected(null);
-//         setSelectedIdx(-1);
-//         // setFormData({ ...EMPTY_SITE, addresses: [] });
+//         setSelectedSite(null);
+//         setSelectedIndex(-1);
+//         setForm({ ...EMPTY_SITE });
 //         setErrorMsg("");
 //     };
 
-//     // ── Edit ──
+//     // ── Edit button ─────────────────────────────────────────────────────────
 //     const handleEdit = () => {
-//         if (!selected) return;
+//         if (!selectedSite) return;
 //         setIsEditing(true);
 //         setIsNew(false);
 //         setErrorMsg("");
 //     };
 
-//     // ── Cancel ──
+//     // ── Cancel button ───────────────────────────────────────────────────────
 //     const handleCancel = () => {
 //         setIsNew(false);
 //         setIsEditing(false);
-//         // if (selected) setFormData({ ...selected, addresses: selected.addresses ? [...selected.addresses] : [] });
 //         setErrorMsg("");
+//         if (selectedSite) setForm({ ...selectedSite });
 //     };
 
-//     // ── Save (POST or PUT) ──
-//     const handleSave = async () => {
-//         if (!formData.siteID.trim()) { setErrorMsg("Site ID is required."); return; }
-//         if (!formData.siteName.trim()) { setErrorMsg("Site Name is required."); return; }
+//     // ── POST: Create new site ───────────────────────────────────────────────
+//     const handleCreate = async () => {
+//         if (!form.SITEID.trim()) { setErrorMsg("Site ID is required."); return; }
+//         if (!form.SITENAME.trim()) { setErrorMsg("Site Name is required."); return; }
+
 //         setIsLoading(true);
 //         setErrorMsg("");
 
 //         try {
-//             if (isNew) {
-//                 // POST — create
-//                 const payload: SiteRecord = {
-//                     ...formData,
-//                     createdBy: LOGGED_IN_USER_ID,
-//                     modifiedBy: LOGGED_IN_USER_ID,
-//                 };
+//             const postBody = {
+//                 SiteGUID: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+//                 SiteID: form.SITEID,
+//                 SiteName: form.SITENAME,
+//                 Description: form.DESCRIPTION,
+//                 DataAreaID: DATA_AREA_ID,
+//                 CreatedBy: LOGGED_IN_USER_ID,
+//                 ModifiedBy: LOGGED_IN_USER_ID,
+//             };
 
-//                 const res = await fetch(`${API_BASE_URL}/api/Site/create`, {
-//                     method: "POST",
-//                     headers: { "Content-Type": "application/json", "accept": "*/*" },
-//                     body: JSON.stringify(payload),
-//                 });
-//                 console.log("Payload:", payload);
+//             const res = await fetch(`${API_BASE_URL}/api/Site/create`, {
+//                 method: "POST",
+//                 headers: { "Content-Type": "application/json", "accept": "*/*" },
+//                 body: JSON.stringify(postBody),
+//             });
 
-//                 if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || "Failed to create."); }
-//                 const updated = [...records, { ...formData }];
-//                 setRecords(updated);
-//                 setSelected({ ...formData });
-//                 setSelectedIdx(updated.length - 1);
-//                 showSuccess(`Site "${formData.siteID}" created.`);
+//             if (!res.ok) throw new Error(`POST failed: ${res.status}`);
 
-//             } else if (isEditing && selected) {
-//                 // PUT — update
-//                 const payload: SiteRecord = {
-//                     ...formData,
-//                     modifiedBy: LOGGED_IN_USER_ID,
-//                 };
-//                 const res = await fetch(`${API_BASE_URL}/api/Site/updateSite`, {
-//                     method: "PUT",
-//                     headers: { "Content-Type": "application/json", "accept": "*/*" },
-//                     body: JSON.stringify(payload),
-//                 });
-//                 if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || "Failed to update."); }
-//                 const updated = records.map((r, i) => i === selectedIdx ? { ...formData } : r);
-//                 setRecords(updated);
-//                 setSelected({ ...formData });
-//                 showSuccess(`Site "${formData.siteID}" updated.`);
-//             }
+//             const json: ApiResponse<{ SiteGUID: string; SiteID: string; SiteName: string }> = await res.json();
 
+//             if (!json.Success) throw new Error(json.Message || "Failed to create site.");
+
+//             const newRecord: SiteRecord = {
+//                 Guid: json.Data.SiteGUID,
+//                 SITEID: json.Data.SiteID,
+//                 SITENAME: json.Data.SiteName,
+//                 DESCRIPTION: form.DESCRIPTION,
+//                 DATAAREAID: DATA_AREA_ID,
+//             };
+
+//             const updatedSites = [...sites, newRecord];
+//             setSites(updatedSites);
+//             setSelectedSite(newRecord);
+//             setSelectedIndex(updatedSites.length - 1);
 //             setIsNew(false);
-//             setIsEditing(false);
+//             showSuccess(json.Message || `Site "${form.SITEID}" created.`);
 
 //         } catch (err) {
-//             setErrorMsg(err instanceof Error ? err.message : "An error occurred.");
+//             setErrorMsg(err instanceof Error ? err.message : "Something went wrong.");
 //         } finally {
 //             setIsLoading(false);
 //         }
 //     };
 
-//     // ── Delete ──
-//     const handleDelete = async () => {
-//         if (!selected || isNew) return;
-//         if (!window.confirm(`Delete site "${selected.siteID}"?`)) return;
+//     // ── PUT: Update existing site ───────────────────────────────────────────
+//     const handleUpdate = async () => {
+//         if (!form.SITEID.trim()) { setErrorMsg("Site ID is required."); return; }
+//         if (!form.SITENAME.trim()) { setErrorMsg("Site Name is required."); return; }
+//         if (!selectedSite) return;
+
 //         setIsLoading(true);
+//         setErrorMsg("");
+
 //         try {
-//             const res = await fetch(`${API_BASE_URL}/api/Site/deleteSite/${selected.siteGUID}`, {
-//                 method: "DELETE",
-//                 headers: { "accept": "*/*" },
+//             // PUT body schema: { GUID, SITEID, SITENAME, DESCRIPTION, DATAAREAID }
+//             const putBody = {
+//                 GUID: selectedSite.Guid,
+//                 SITEID: form.SITEID,
+//                 SITENAME: form.SITENAME,
+//                 DESCRIPTION: form.DESCRIPTION,
+//                 DATAAREAID: form.DATAAREAID,
+//             };
+
+//             const res = await fetch(`${API_BASE_URL}/api/Site/updateSiteById`, {
+//                 method: "PUT",
+//                 headers: { "Content-Type": "application/json", "accept": "*/*" },
+//                 body: JSON.stringify(putBody),
 //             });
-//             if (!res.ok) throw new Error("Failed to delete.");
-//             const updated = records.filter((_, i) => i !== selectedIdx);
-//             setRecords(updated);
-//             const next = updated[0] ?? null;
-//             setSelected(next);
-//             setSelectedIdx(next ? 0 : -1);
-//             setFormData(next ? { ...next } : { ...EMPTY_SITE });
-//             showSuccess("Site deleted.");
+
+//             if (!res.ok) throw new Error(`PUT failed: ${res.status}`);
+
+//             const json: ApiResponse<unknown> = await res.json();
+
+//             if (!json.Success) throw new Error(json.Message || "Failed to update site.");
+
+//             // Update the site in the local list
+//             const updatedRecord: SiteRecord = { ...form, Guid: selectedSite.Guid };
+//             const updatedSites = sites.map((s, i) => i === selectedIndex ? updatedRecord : s);
+//             setSites(updatedSites);
+//             setSelectedSite(updatedRecord);
+//             setIsEditing(false);
+//             showSuccess(json.Message || `Site "${form.SITEID}" updated.`);
+
+//         } catch (err) {
+//             setErrorMsg(err instanceof Error ? err.message : "Something went wrong.");
+//         } finally {
+//             setIsLoading(false);
+//         }
+//     };
+
+//     // ── DELETE: Delete selected site ────────────────────────────────────────
+//     const handleDelete = async () => {
+//         if (!selectedSite) return;
+//         if (!window.confirm(`Delete site "${selectedSite.SITEID}"?`)) return;
+
+//         setIsLoading(true);
+//         setErrorMsg("");
+
+//         try {
+//             // DELETE body schema: { Guid }
+//             const res = await fetch(`${API_BASE_URL}/api/Site/DeleteSiteById`, {
+//                 method: "DELETE",
+//                 headers: { "Content-Type": "application/json", "accept": "*/*" },
+//                 body: JSON.stringify({ Guid: selectedSite.Guid }),
+//             });
+
+//             if (!res.ok) throw new Error(`DELETE failed: ${res.status}`);
+
+//             const json: ApiResponse<unknown> = await res.json();
+
+//             if (!json.Success) throw new Error(json.Message || "Failed to delete site.");
+
+//             // Remove from local list and select the first remaining site
+//             const updatedSites = sites.filter((_, i) => i !== selectedIndex);
+//             setSites(updatedSites);
+
+//             const next = updatedSites[0] ?? null;
+//             setSelectedSite(next);
+//             setSelectedIndex(next ? 0 : -1);
+//             setForm(next ? { ...next } : { ...EMPTY_SITE });
+
+//             showSuccess(json.Message || `Site deleted.`);
+
 //         } catch (err) {
 //             setErrorMsg(err instanceof Error ? err.message : "Failed to delete.");
 //         } finally {
@@ -231,40 +712,10 @@
 //         }
 //     };
 
-//     // ──────────────────────────────────────────
-//     // ADDRESS MODAL handlers
-//     // ──────────────────────────────────────────
-//     const openAddAddress = () => {
-//         setAddressForm({ ...EMPTY_ADDRESS });
-//         setEditAddressIdx(-1);
-//         setShowAddressModal(true);
-//     };
-
-//     const openEditAddress = (idx: number) => {
-//         setAddressForm({ ...formData.addresses[idx] });
-//         setEditAddressIdx(idx);
-//         setShowAddressModal(true);
-//     };
-
-//     const handleAddressChange = (field: keyof Address, value: string | boolean | number) => {
-//         setAddressForm(prev => ({ ...prev, [field]: value }));
-//     };
-
-//     const handleSaveAddress = () => {
-//         if (!addressForm.address.trim()) { alert("Address is required."); return; }
-//         const updatedAddresses = [...formData.addresses];
-//         if (editAddressIdx === -1) {
-//             updatedAddresses.push({ ...addressForm });
-//         } else {
-//             updatedAddresses[editAddressIdx] = { ...addressForm };
-//         }
-//         setFormData(prev => ({ ...prev, addresses: updatedAddresses }));
-//         setShowAddressModal(false);
-//     };
-
-//     const handleDeleteAddress = (idx: number) => {
-//         const updatedAddresses = formData.addresses.filter((_, i) => i !== idx);
-//         setFormData(prev => ({ ...prev, addresses: updatedAddresses }));
+//     // ── Save button — decides create or update ──────────────────────────────
+//     const handleSave = () => {
+//         if (isNew) handleCreate();
+//         else if (isEditing) handleUpdate();
 //     };
 
 //     const showSuccess = (msg: string) => {
@@ -272,47 +723,54 @@
 //         setTimeout(() => setSuccessMsg(""), 3000);
 //     };
 
-//     // const filteredRecords = records.filter(r =>
-//     //     r.siteID.toLowerCase().includes(filterText.toLowerCase()) ||
-//     //     r.siteName.toLowerCase().includes(filterText.toLowerCase())
-//     // );
+//     const formIsEditable = isNew || isEditing;
 
-//     const editable = isNew || isEditing;
+//     const filteredSites = sites.filter(site =>
+//         site.SITEID.toLowerCase().includes(filterText.toLowerCase()) ||
+//         site.SITENAME.toLowerCase().includes(filterText.toLowerCase())
+//     );
 
-//     // ──────────────────────────────────────────
-//     // JSX
-//     // ──────────────────────────────────────────
+//     // ─── Render ─────────────────────────────────────────────────────────────
 //     return (
 //         <div className="s-shell">
 
-//             {/* ══ COMMAND BAR ══ */}
+//             {/* Command bar */}
 //             <div className="s-commandBar">
 //                 <button className="s-cmd-icon-btn" title="Back">&#8592;</button>
 //                 <button className="s-cmd-icon-btn s-cmd-hamburger">&#9776;</button>
 
 //                 <div className="s-cmd-actions">
-//                     <button className="s-cmd-btn s-cmd-save" onClick={handleSave} disabled={isLoading || (!isNew && !isEditing)}>
+//                     <button
+//                         className="s-cmd-btn s-cmd-save"
+//                         onClick={handleSave}
+//                         disabled={isLoading || (!isNew && !isEditing)}
+//                     >
 //                         <span>&#128190;</span> Save
 //                     </button>
-//                     <button className="s-cmd-btn" onClick={handleNew} disabled={isLoading}>
+//                     <button
+//                         className="s-cmd-btn"
+//                         onClick={handleNew}
+//                         disabled={isLoading || isNew || isEditing}
+//                     >
 //                         <span>+</span> New
 //                     </button>
-//                     <button className="s-cmd-btn" onClick={handleDelete} disabled={isLoading || !selected || isNew}>
+//                     <button
+//                         className="s-cmd-btn"
+//                         onClick={handleDelete}
+//                         disabled={isLoading || !selectedSite || isNew || isEditing}
+//                     >
 //                         <span>🗑</span> Delete
 //                     </button>
 //                 </div>
 
 //                 <div className="s-cmd-divider" />
 //                 <span className="s-cmd-tab s-cmd-tab-active">Options</span>
-//                 <div className="s-cmd-right">
-//                     <button className="s-cmd-icon-btn">&#128269;</button>
-//                 </div>
 //             </div>
 
-//             {/* ══ BODY ══ */}
+//             {/* Body */}
 //             <div className="s-body">
 
-//                 {/* ══ SIDEBAR ══ */}
+//                 {/* Sidebar */}
 //                 <div className="s-sidebar">
 //                     <div className="s-sidebar-filter">
 //                         <span className="s-filter-icon">&#128269;</span>
@@ -326,162 +784,94 @@
 //                     </div>
 
 //                     <div className="s-sidebar-list">
+
 //                         {pageLoading && <p className="s-loading">Loading...</p>}
 
+//                         {/* New unsaved site shown at top */}
 //                         {isNew && (
 //                             <div className="s-sidebar-item s-sidebar-item-active">
-//                                 <div className="s-item-code">{formData.siteID || "NEW"}</div>
-//                                 <div className="s-item-desc">{formData.siteName || "New site"}</div>
+//                                 <div className="s-item-code">{form.SITEID || "NEW"}</div>
+//                                 <div className="s-item-desc">{form.SITENAME || "New site"}</div>
 //                             </div>
 //                         )}
 
-//                         {/* {filteredRecords.map((r, idx) => (
-//                             // <div
-//                             //     key={idx}
-//                             //     className={`s-sidebar-item ${!isNew && selectedIdx === idx ? "s-sidebar-item-active" : ""}`}
-//                             //     onClick={() => handleSelectSite(r, idx)}
-//                             // >
-//                             //     <div className="s-item-code">{r.siteID}</div>
-//                             //     <div className="s-item-desc">{r.siteName}</div>
-//                             // </div>
-//                         )
-//                         )
-//                         } */}
+//                         {/* Existing sites */}
+//                         {filteredSites.map((site, index) => (
+//                             <div
+//                                 key={site.Guid || index}
+//                                 className={`s-sidebar-item ${selectedIndex === index && !isNew ? "s-sidebar-item-active" : ""}`}
+//                                 onClick={() => handleSelectSite(site, index)}
+//                             >
+//                                 <div className="s-item-code">{site.SITEID}</div>
+//                                 <div className="s-item-desc">{site.SITENAME}</div>
+//                             </div>
+//                         ))}
 //                     </div>
 //                 </div>
 
-//                 {/* ══ DETAIL PANEL ══ */}
+//                 {/* Detail panel */}
 //                 <div className="s-detail">
-
 //                     <div className="s-std-view">Standard view &#8964;</div>
-//                     <h1 className="s-detail-title">Sites</h1>
+//                     <h1 className="s-detail-title">Site</h1>
 
 //                     {successMsg && <div className="s-successBar">✓ {successMsg}</div>}
 //                     {errorMsg && <div className="s-errorBar">⚠ {errorMsg}</div>}
 
-//                     {/* ── Header fields: Site, Name, Site Name In Arabic, Head Office, Cost Center ── */}
 //                     <div className="s-header-card">
 //                         <div className="s-header-fields">
 
-//                             {/* Site ID */}
 //                             <div className="s-field-group">
-//                                 <label className="s-field-label">Site</label>
+//                                 <label className="s-field-label">Site ID</label>
 //                                 <input
-//                                     className={`s-field-input s-field-short ${editable ? "s-active" : ""}`}
-//                                     value={formData.siteID}
-//                                     onChange={e => handleChange("siteID", e.target.value)}
-//                                     disabled={!editable}
+//                                     className={`s-field-input s-field-short ${formIsEditable ? "s-active" : ""}`}
+//                                     value={form.SITEID}
+//                                     onChange={e => handleFormChange("SITEID", e.target.value)}
+//                                     disabled={!formIsEditable}
 //                                     placeholder="Site ID"
 //                                 />
 //                             </div>
 
-//                             {/* Site Name */}
 //                             <div className="s-field-group">
 //                                 <label className="s-field-label">Name</label>
 //                                 <input
-//                                     className={`s-field-input s-field-wide ${editable ? "s-active" : ""}`}
-//                                     value={formData.siteName}
-//                                     onChange={e => handleChange("siteName", e.target.value)}
-//                                     disabled={!editable}
+//                                     className={`s-field-input s-field-wide ${formIsEditable ? "s-active" : ""}`}
+//                                     value={form.SITENAME}
+//                                     onChange={e => handleFormChange("SITENAME", e.target.value)}
+//                                     disabled={!formIsEditable}
 //                                     placeholder="Site name"
+//                                 />
+//                             </div>
+
+//                             <div className="s-field-group">
+//                                 <label className="s-field-label">Description</label>
+//                                 <input
+//                                     className={`s-field-input s-field-wide ${formIsEditable ? "s-active" : ""}`}
+//                                     value={form.DESCRIPTION}
+//                                     onChange={e => handleFormChange("DESCRIPTION", e.target.value)}
+//                                     disabled={!formIsEditable}
+//                                     placeholder="Description"
 //                                 />
 //                             </div>
 
 //                         </div>
 
-//                         {/* Edit / Cancel button */}
+//                         {/* Edit / Cancel buttons */}
 //                         <div className="s-header-actions">
-//                             {!isNew && !isEditing && selected && (
-//                                 <button className="s-btn-secondary" onClick={handleEdit}>✏ Edit</button>
+//                             {!isNew && !isEditing && selectedSite && (
+//                                 <button className="s-btn-secondary" onClick={handleEdit} disabled={isLoading}>
+//                                     ✏ Edit
+//                                 </button>
 //                             )}
 //                             {(isNew || isEditing) && (
-//                                 <button className="s-btn-secondary" onClick={handleCancel} disabled={isLoading}>Cancel</button>
+//                                 <button className="s-btn-secondary" onClick={handleCancel} disabled={isLoading}>
+//                                     Cancel
+//                                 </button>
 //                             )}
 //                         </div>
 //                     </div>
 
 //                 </div>
 //             </div>
-
-//             {/* ══ ADDRESS MODAL ══ */}
-//             {showAddressModal && (
-//                 <div className="s-modal-overlay" onClick={e => e.target === e.currentTarget && setShowAddressModal(false)}>
-//                     <div className="s-modal">
-//                         <div className="s-modal-header">
-//                             <span>{editAddressIdx === -1 ? "Add Address" : "Edit Address"}</span>
-//                             <button className="s-modal-close" onClick={() => setShowAddressModal(false)}>×</button>
-//                         </div>
-
-//                         <div className="s-modal-body">
-//                             <div className="s-modal-grid">
-
-//                                 <div className="s-field-group">
-//                                     <label className="s-field-label">Address *</label>
-//                                     <input className="s-field-input" value={addressForm.address} onChange={e => handleAddressChange("address", e.target.value)} placeholder="Full address" />
-//                                 </div>
-
-//                                 <div className="s-field-group">
-//                                     <label className="s-field-label">Party ID</label>
-//                                     <input className="s-field-input" value={addressForm.partyID} onChange={e => handleAddressChange("partyID", e.target.value)} placeholder="Party ID" />
-//                                 </div>
-
-//                                 <div className="s-field-group">
-//                                     <label className="s-field-label">Party Type</label>
-//                                     <select className="s-field-select" value={addressForm.partyType} onChange={e => handleAddressChange("partyType", Number(e.target.value))}>
-//                                         {PARTY_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-//                                     </select>
-//                                 </div>
-
-//                                 <div className="s-field-group">
-//                                     <label className="s-field-label">Address Type</label>
-//                                     <select className="s-field-select" value={addressForm.addressType} onChange={e => handleAddressChange("addressType", Number(e.target.value))}>
-//                                         {ADDRESS_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-//                                     </select>
-//                                 </div>
-
-//                                 <div className="s-field-group">
-//                                     <label className="s-field-label">City</label>
-//                                     <input className="s-field-input" value={addressForm.city} onChange={e => handleAddressChange("city", e.target.value)} placeholder="City" />
-//                                 </div>
-
-//                                 <div className="s-field-group">
-//                                     <label className="s-field-label">State</label>
-//                                     <input className="s-field-input" value={addressForm.state} onChange={e => handleAddressChange("state", e.target.value)} placeholder="State" />
-//                                 </div>
-
-//                                 <div className="s-field-group">
-//                                     <label className="s-field-label">Country</label>
-//                                     <input className="s-field-input" value={addressForm.country} onChange={e => handleAddressChange("country", e.target.value)} placeholder="Country" />
-//                                 </div>
-
-//                                 <div className="s-field-group">
-//                                     <label className="s-field-label">Postal Code</label>
-//                                     <input className="s-field-input" value={addressForm.postalCode} onChange={e => handleAddressChange("postalCode", e.target.value)} placeholder="Postal code" />
-//                                 </div>
-
-//                                 <div className="s-field-group">
-//                                     <label className="s-field-label">Is Active</label>
-//                                     <div className="s-toggle-row">
-//                                         <Toggle
-//                                             value={addressForm.isActive}
-//                                             onChange={() => handleAddressChange("isActive", !addressForm.isActive)}
-//                                         />
-//                                         <span className="s-toggle-label">{addressForm.isActive ? "Yes" : "No"}</span>
-//                                     </div>
-//                                 </div>
-
-//                             </div>
-//                         </div>
-
-//                         <div className="s-modal-footer">
-//                             <button className="s-btn-secondary" onClick={() => setShowAddressModal(false)}>Cancel</button>
-//                             <button className="s-btn-primary" onClick={handleSaveAddress}>
-//                                 {editAddressIdx === -1 ? "Add" : "Update"}
-//                             </button>
-//                         </div>
-//                     </div>
-//                 </div>
-//             )}
 
 //         </div>
 //     );
@@ -497,387 +887,5 @@
 
 
 
-import React, { useState, useEffect } from "react";
-import "./Site.css";
 
 
-interface SiteRecord {
-    SiteGUID: string;
-    SiteID: string;
-    SiteName: string;
-    Description: string;
-    DataAreaID: string;
-    CreatedBy: string;
-    ModifiedBy: string;
-}
-
-
-
-const LOGGED_IN_USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
-const API_BASE_URL = "http://192.168.0.106";
-
-const EMPTY_SITE: SiteRecord = {
-    SiteGUID: "",
-    SiteID: "",
-    SiteName: "",
-    Description: "",
-    DataAreaID: "",
-    CreatedBy: LOGGED_IN_USER_ID,
-    ModifiedBy: LOGGED_IN_USER_ID,
-};
-
-
-const Toggle: React.FC<{
-    value: boolean;
-    onChange?: () => void;
-    disabled?: boolean;
-}> = ({ value, onChange, disabled }) => (
-    <button
-        type="button"
-        className={`s-toggle ${value ? "s-toggle-on" : "s-toggle-off"}`}
-        onClick={!disabled ? onChange : undefined}
-        disabled={disabled}
-    >
-        <span className="s-toggle-thumb" />
-    </button>
-);
-
-// ──────────────────────────────────────────────
-// MAIN COMPONENT
-// ──────────────────────────────────────────────
-const SitesPage: React.FC = () => {
-
-    const [records, setRecords] = useState<SiteRecord[]>([]);
-    const [selected, setSelected] = useState<SiteRecord | null>(null);
-    const [selectedIdx, setSelectedIdx] = useState<number>(-1);
-    const [formData, setFormData] = useState<SiteRecord>({ ...EMPTY_SITE });
-    const [filterText, setFilterText] = useState<string>("");
-    const [isNew, setIsNew] = useState<boolean>(false);
-    const [isEditing, setIsEditing] = useState<boolean>(false);
-    const [successMsg, setSuccessMsg] = useState<string>("");
-    const [errorMsg, setErrorMsg] = useState<string>("");
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [pageLoading, setPageLoading] = useState<boolean>(true);
-
-    // ── NEW: store the logged-in user's dataAreaID ──
-    const [userDataAreaID, setUserDataAreaID] = useState<string>("");
-
-    // Address modal state
-    const [showAddressModal, setShowAddressModal] = useState<boolean>(false);
-    const [editAddressIdx, setEditAddressIdx] = useState<number>(-1);
-
-    // Section collapse state
-    const [generalOpen, setGeneralOpen] = useState<boolean>(true);
-    const [addressesOpen, setAddressesOpen] = useState<boolean>(true);
-
-    // ── NEW: fetch logged-in user's dataAreaID on mount ──
-    useEffect(() => {
-        const loadUser = async () => {
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/User/GetByID/${LOGGED_IN_USER_ID}`,
-                    {
-                        headers: { "accept": "*/*" },
-                    });
-                if (!res.ok) throw new Error("Failed to fetch user.");
-                const user = await res.json();
-                // Adjust "user.DataAreaID" to match the actual field name in your API response
-                setUserDataAreaID(user.DataAreaID ?? "");
-            } catch (err) {
-                console.error("Could not load user DataAreaID:", err);
-            }
-        };
-        loadUser();
-    }, []);
-
-    // ── GET all sites on load ──
-    useEffect(() => {
-        const load = async () => {
-            try {
-                setPageLoading(true);
-                const res = await fetch(`${API_BASE_URL}/api/Site/GetByDataAreaID`, {
-                    headers: { "accept": "*/*" },
-                });
-                if (!res.ok) throw new Error("Failed to fetch sites.");
-                const data: SiteRecord[] = await res.json();
-                setRecords(data);
-                if (data.length > 0) {
-                    setSelected(data[0]);
-                    setSelectedIdx(0);
-                    setFormData({ ...data[0] });
-                }
-            } catch (err) {
-                setErrorMsg("Could not load sites. Please refresh.");
-                console.error(err);
-            } finally {
-                setPageLoading(false);
-            }
-        };
-        load();
-    }, []);
-
-    // ── Select site from sidebar ──
-    const handleSelectSite = (site: SiteRecord, idx: number) => {
-        if (isNew || isEditing) return;
-        setSelected(site);
-        setSelectedIdx(idx);
-        setErrorMsg("");
-    };
-
-    // ── Form field change ──
-    const handleChange = (field: keyof SiteRecord, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-    };
-
-    // ── + New ──
-    const handleNew = () => {
-        setIsNew(true);
-        setIsEditing(false);
-        setSelected(null);
-        setSelectedIdx(-1);
-        setErrorMsg("");
-    };
-
-    // ── Edit ──
-    const handleEdit = () => {
-        if (!selected) return;
-        setIsEditing(true);
-        setIsNew(false);
-        setErrorMsg("");
-    };
-
-    // ── Cancel ──
-    const handleCancel = () => {
-        setIsNew(false);
-        setIsEditing(false);
-        setErrorMsg("");
-    };
-
-
-    const handleSave = async () => {
-        if (!formData.SiteID.trim()) { setErrorMsg("Site ID is required."); return; }
-        if (!formData.SiteName.trim()) { setErrorMsg("Site Name is required."); return; }
-
-        // ── NEW: guard against missing dataAreaID ──
-        if (!userDataAreaID) {
-            setErrorMsg("User data area could not be determined. Please refresh and try again.");
-            return;
-        }
-
-        setIsLoading(true);
-        setErrorMsg("");
-
-        try {
-            if (isNew) {
-                // POST — create
-                const payload: SiteRecord = {
-                    ...formData,
-                    DataAreaID: userDataAreaID,       // ← auto-filled from user context
-                    CreatedBy: LOGGED_IN_USER_ID,
-                    ModifiedBy: LOGGED_IN_USER_ID,
-                };
-
-                console.log("Payload:", payload);
-
-                const res = await fetch(`${API_BASE_URL}/api/Site/create`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "accept": "*/*" },
-                    body: JSON.stringify(payload),
-                });
-
-                if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || "Failed to create."); }
-                const updated = [...records, { ...formData, DataAreaID: userDataAreaID }];
-                setRecords(updated);
-                setSelected({ ...formData, DataAreaID: userDataAreaID });
-                setSelectedIdx(updated.length - 1);
-                showSuccess(`Site "${formData.SiteID}" created.`);
-
-            } else if (isEditing && selected) {
-                // PUT — update
-                const payload: SiteRecord = {
-                    ...formData,
-                    ModifiedBy: LOGGED_IN_USER_ID,
-                };
-                const res = await fetch(`${API_BASE_URL}/api/Site/updateSite`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json", "accept": "*/*" },
-                    body: JSON.stringify(payload),
-                });
-                if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || "Failed to update."); }
-                const updated = records.map((r, i) => i === selectedIdx ? { ...formData } : r);
-                setRecords(updated);
-                setSelected({ ...formData });
-                showSuccess(`Site "${formData.SiteID}" updated.`);
-            }
-
-            setIsNew(false);
-            setIsEditing(false);
-
-        } catch (err) {
-            setErrorMsg(err instanceof Error ? err.message : "An error occurred.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    // ── Delete ──
-    const handleDelete = async () => {
-        if (!selected || isNew) return;
-        if (!window.confirm(`Delete site "${selected.SiteID}"?`)) return;
-        setIsLoading(true);
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/Site/deleteSite/${selected.SiteGUID}`, {
-                method: "DELETE",
-                headers: { "accept": "*/*" },
-            });
-            if (!res.ok) throw new Error("Failed to delete.");
-            const updated = records.filter((_, i) => i !== selectedIdx);
-            setRecords(updated);
-            const next = updated[0] ?? null;
-            setSelected(next);
-            setSelectedIdx(next ? 0 : -1);
-            setFormData(next ? { ...next } : { ...EMPTY_SITE });
-            showSuccess("Site deleted.");
-        } catch (err) {
-            setErrorMsg(err instanceof Error ? err.message : "Failed to delete.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const showSuccess = (msg: string) => {
-        setSuccessMsg(msg);
-        setTimeout(() => setSuccessMsg(""), 3000);
-    };
-
-    const editable = isNew || isEditing;
-
-    // ──────────────────────────────────────────
-    // JSX
-    // ──────────────────────────────────────────
-    return (
-        <div className="s-shell">
-
-            {/* ══ COMMAND BAR ══ */}
-            <div className="s-commandBar">
-                <button className="s-cmd-icon-btn" title="Back">&#8592;</button>
-                <button className="s-cmd-icon-btn s-cmd-hamburger">&#9776;</button>
-
-                <div className="s-cmd-actions">
-                    <button className="s-cmd-btn s-cmd-save" onClick={handleSave} disabled={isLoading || (!isNew && !isEditing)}>
-                        <span>&#128190;</span> Save
-                    </button>
-                    <button className="s-cmd-btn" onClick={handleNew} disabled={isLoading}>
-                        <span>+</span> New
-                    </button>
-                    <button className="s-cmd-btn" onClick={handleDelete} disabled={isLoading || !selected || isNew}>
-                        <span>🗑</span> Delete
-                    </button>
-                </div>
-
-                <div className="s-cmd-divider" />
-                <span className="s-cmd-tab s-cmd-tab-active">Options</span>
-                <div className="s-cmd-right">
-                    <button className="s-cmd-icon-btn">&#128269;</button>
-                </div>
-            </div>
-
-            {/* ══ BODY ══ */}
-            <div className="s-body">
-
-                {/* ══ SIDEBAR ══ */}
-                <div className="s-sidebar">
-                    <div className="s-sidebar-filter">
-                        <span className="s-filter-icon">&#128269;</span>
-                        <input
-                            type="text"
-                            placeholder="Filter"
-                            value={filterText}
-                            onChange={e => setFilterText(e.target.value)}
-                            className="s-filter-input"
-                        />
-                    </div>
-
-                    <div className="s-sidebar-list">
-                        {pageLoading && <p className="s-loading">Loading...</p>}
-
-                        {isNew && (
-                            <div className="s-sidebar-item s-sidebar-item-active">
-                                <div className="s-item-code">{formData.SiteID || "NEW"}</div>
-                                <div className="s-item-desc">{formData.SiteName || "New site"}</div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* ══ DETAIL PANEL ══ */}
-                <div className="s-detail">
-
-                    <div className="s-std-view">Standard view &#8964;</div>
-                    <h1 className="s-detail-title">Site</h1>
-
-                    {successMsg && <div className="s-successBar">✓ {successMsg}</div>}
-                    {errorMsg && <div className="s-errorBar">⚠ {errorMsg}</div>}
-
-                    <div className="s-header-card">
-                        <div className="s-header-fields">
-
-                            {/* Site ID */}
-                            <div className="s-field-group">
-                                <label className="s-field-label">Site</label>
-                                <input
-                                    className={`s-field-input s-field-short ${editable ? "s-active" : ""}`}
-                                    value={formData.SiteID}
-                                    onChange={e => handleChange("SiteID", e.target.value)}
-                                    disabled={!editable}
-                                    placeholder="Site ID"
-                                />
-                            </div>
-
-                            {/* Site Name */}
-                            <div className="s-field-group">
-                                <label className="s-field-label">Name</label>
-                                <input
-                                    className={`s-field-input s-field-wide ${editable ? "s-active" : ""}`}
-                                    value={formData.SiteName}
-                                    onChange={e => handleChange("SiteName", e.target.value)}
-                                    disabled={!editable}
-                                    placeholder="Site name"
-                                />
-                            </div>
-
-                        </div>
-
-                        {/* Edit / Cancel button */}
-                        <div className="s-header-actions">
-                            {!isNew && !isEditing && selected && (
-                                <button className="s-btn-secondary" onClick={handleEdit}>✏ Edit</button>
-                            )}
-                            {(isNew || isEditing) && (
-                                <button className="s-btn-secondary" onClick={handleCancel} disabled={isLoading}>Cancel</button>
-                            )}
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            {/* ══ ADDRESS MODAL ══ */}
-            {showAddressModal && (
-                <div className="s-modal-overlay" onClick={e => e.target === e.currentTarget && setShowAddressModal(false)}>
-                    <div className="s-modal">
-                        <div className="s-modal-header">
-                            <span>{editAddressIdx === -1 ? "Add Address" : "Edit Address"}</span>
-                            <button className="s-modal-close" onClick={() => setShowAddressModal(false)}>×</button>
-                        </div>
-                        <div className="s-modal-footer">
-                            <button className="s-btn-secondary" onClick={() => setShowAddressModal(false)}>Cancel</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-        </div>
-    );
-};
-
-export default SitesPage;

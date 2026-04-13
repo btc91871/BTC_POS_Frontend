@@ -5,18 +5,6 @@ import type { StyleRecord } from "../productInterface.ts";
 // import Sidebar from "../../components/Sidebar/Sidebar";
 import "./Style.css";
 
-
-// interface StyleRecord {
-//     GUID: string;
-//     STYLE: string;
-//     STYLENAME: string;
-//     STYLEDESCRIPTION: string;
-//     STYLEDISPLAYORDER: number;
-//     STYLEREFINERGROUP: string;
-//     hexcode: string;
-//     url: string;
-// }
-
 type SortDirection = "asc" | "desc" | null;
 type SortKey = keyof StyleRecord | null;
 
@@ -24,8 +12,6 @@ type SortKey = keyof StyleRecord | null;
 const LOGGED_IN_USER_ID = localStorage.getItem("userId") ?? "";
 const AUTH_TOKEN = localStorage.getItem("token") ?? "";
 
-
-// const API_BASE_URL = "http://192.168.0.102";
 const EMPTY_ROW: StyleRecord = {
     GUID: "",
     STYLE: "",
@@ -37,9 +23,6 @@ const EMPTY_ROW: StyleRecord = {
     url: "",
 };
 
-// ──────────────────────────────────────────────
-// MAIN COMPONENT
-// ──────────────────────────────────────────────
 const StylesPage: React.FC = () => {
 
     const [records, setRecords] = useState<StyleRecord[]>([]);
@@ -50,12 +33,10 @@ const StylesPage: React.FC = () => {
     const [rowError, setRowError] = useState<string>("");
     const [isEditMode, setIsEditMode] = useState<boolean>(false);
     const [editedRecords, setEditedRecords] = useState<StyleRecord[]>([]);
-
     const [successMsg, setSuccessMsg] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [pageLoading, setPageLoading] = useState<boolean>(true);
     const [pageError, setPageError] = useState<string>("");
-
 
     useEffect(() => {
         const loadStyles = async () => {
@@ -76,7 +57,6 @@ const StylesPage: React.FC = () => {
                 const arr = Array.isArray(data) ? data
                     : Array.isArray(data?.Data) ? data.Data
                         : [];
-
                 setRecords(arr);
             } catch (err) {
                 setPageError("Could not load styles. Please refresh the page.");
@@ -88,7 +68,6 @@ const StylesPage: React.FC = () => {
 
         loadStyles();
     }, []);
-
 
     const displayedRecords = useMemo<StyleRecord[]>(() => {
         if (!Array.isArray(records)) return [];
@@ -126,9 +105,6 @@ const StylesPage: React.FC = () => {
         return sortDir === "asc" ? "↑" : "↓";
     };
 
-    // ──────────────────────────────────────────
-    // Existing row inline edit (StyleForm rows)
-    // ──────────────────────────────────────────
     const handleTableChange = (index: number, field: keyof StyleRecord, value: string): void => {
         const updated = [...records];
         updated[index] = {
@@ -138,11 +114,8 @@ const StylesPage: React.FC = () => {
         setRecords(updated);
     };
 
-    // ──────────────────────────────────────────
-    // New inline row — add empty editable row
-    // ──────────────────────────────────────────
     const addRow = (): void => {
-        if (newRow) return; // only one new row at a time
+        if (newRow) return;
         setNewRow({ ...EMPTY_ROW });
     };
 
@@ -165,7 +138,6 @@ const StylesPage: React.FC = () => {
         setIsLoading(true);
         setRowError("");
 
-        // Build payload: visible fields + auto-filled auth fields
         const payload = {
             style: newRow.STYLE,
             stylename: newRow.STYLENAME,
@@ -194,8 +166,19 @@ const StylesPage: React.FC = () => {
                 throw new Error(errData.message || `Server error: ${response.status}`);
             }
 
+            const created = await response.json();
+            const savedRecord: StyleRecord = {
+                GUID: created.GUID ?? created.guid ?? created.Id ?? created.id ?? "",
+                STYLE: created.STYLE ?? created.style ?? newRow.STYLE,
+                STYLENAME: created.STYLENAME ?? created.stylename ?? newRow.STYLENAME,
+                STYLEDESCRIPTION: created.STYLEDESCRIPTION ?? created.styledescription ?? newRow.STYLEDESCRIPTION,
+                STYLEDISPLAYORDER: created.STYLEDISPLAYORDER ?? created.styledisplayorder ?? newRow.STYLEDISPLAYORDER,
+                STYLEREFINERGROUP: created.STYLEREFINERGROUP ?? created.stylerefinergroup ?? newRow.STYLEREFINERGROUP,
+                hexcode: created.hexcode ?? "",
+                url: created.url ?? "",
+            };
 
-            setRecords((prev) => [...prev, newRow]);
+            setRecords((prev) => [...prev, savedRecord]);
             setNewRow(null);
             showSuccess(`Style "${newRow.STYLE}" saved successfully.`);
 
@@ -212,8 +195,6 @@ const StylesPage: React.FC = () => {
         setTimeout(() => setSuccessMsg(""), 3500);
     };
 
-
-
     const handleEditClick = (): void => {
         setFilterText("");
         setSortKey(null);
@@ -223,22 +204,20 @@ const StylesPage: React.FC = () => {
         setRowError("");
     };
 
-
-
-
     const handleCancelEdit = (): void => {
         setIsEditMode(false);
         setEditedRecords([]);
         setRowError("");
     };
 
-    const handleEditRowChange = (index: number, field: keyof StyleRecord, value: string): void => {
-        const updated = [...editedRecords];
-        updated[index] = {
-            ...updated[index],
-            [field]: field === "STYLEDISPLAYORDER" ? Number(value) : value,
-        };
-        setEditedRecords(updated);
+    const handleEditRowChange = (guid: string, field: keyof StyleRecord, value: string): void => {
+        setEditedRecords(prev =>
+            prev.map(r =>
+                r.GUID === guid
+                    ? { ...r, [field]: field === "STYLEDISPLAYORDER" ? Number(value) : value }
+                    : r
+            )
+        );
     };
 
     const handleSaveEdit = async (): Promise<void> => {
@@ -256,7 +235,6 @@ const StylesPage: React.FC = () => {
                     console.warn("Skipping row with no GUID:", row);
                     continue;
                 }
-
                 const payload = {
                     GUID: row.GUID,
                     STYLE: row.STYLE,
@@ -268,7 +246,6 @@ const StylesPage: React.FC = () => {
                 };
 
                 console.log("Updating style with payload:", payload);
-
                 const response = await fetch(STYLE_API.UPDATE_STYLE, {
                     method: "PUT",
                     headers: {
@@ -440,15 +417,15 @@ const StylesPage: React.FC = () => {
                         {/* Existing records rendered via StyleForm */}
                         {displayedRecords.map((row, index) =>
                             isEditMode ? (
-                                <tr key={index} className="tr">
-                                    <td className="td"><input value={editedRecords[index]?.STYLE ?? ""} onChange={(e) => handleEditRowChange(index, "STYLE", e.target.value)} /></td>
-                                    <td className="td"><input type="number" value={editedRecords[index]?.STYLEDISPLAYORDER ?? 0} onChange={(e) => handleEditRowChange(index, "STYLEDISPLAYORDER", e.target.value)} /></td>
-                                    {/* <td className="td"><input value={editedRecords[index]?.HEXCODE ?? ""} onChange={(e) => handleEditRowChange(index, "HEXCODE", e.target.value)} /></td>
-                                    <td className="td"><input value={editedRecords[index]?.URL ?? ""} onChange={(e) => handleEditRowChange(index, "URL", e.target.value)} /></td> */}
-                                    <td className="td"><input value={editedRecords[index]?.STYLEREFINERGROUP ?? ""} onChange={(e) => handleEditRowChange(index, "STYLEREFINERGROUP", e.target.value)} /></td>
+                                <tr key={row.GUID} className="tr">
+                                    <td className="td"><input value={editedRecords.find(r => r.GUID === row.GUID)?.STYLE ?? ""} onChange={(e) => handleEditRowChange(row.GUID, "STYLE", e.target.value)} /></td>
+                                    <td className="td"><input type="number" value={editedRecords.find(r => r.GUID === row.GUID)?.STYLEDISPLAYORDER ?? 0} onChange={(e) => handleEditRowChange(row.GUID, "STYLEDISPLAYORDER", e.target.value)} /></td>
+                                    {/* <td className="td"><input value={editedRecords.find(r => r.GUID === row.GUID)?.HEXCODE ?? ""} onChange={(e) => handleEditRowChange(row.GUID, "HEXCODE", e.target.value)} /></td>
+                                    <td className="td"><input value={editedRecords.find(r => r.GUID === row.GUID)?.URL ?? ""} onChange={(e) => handleEditRowChange(row.GUID, "URL", e.target.value)} /></td> */}
+                                    <td className="td"><input value={editedRecords.find(r => r.GUID === row.GUID)?.STYLEREFINERGROUP ?? ""} onChange={(e) => handleEditRowChange(row.GUID, "STYLEREFINERGROUP", e.target.value)} /></td>
                                 </tr>
                             ) : (
-                                <tr key={index} className="tr">
+                                <tr key={row.GUID} className="tr">
                                     <td className="td">{row.STYLE}</td>
                                     <td className="td">{row.STYLEDISPLAYORDER}</td>
 

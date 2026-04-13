@@ -1,16 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { API_BASE_URL } from "../apiRoutes";
+import type { UnitRecord } from "../productInterface";
 import "./Unit.css";
 
-// ──────────────────────────────────────────────
-// INTERFACES
-// ──────────────────────────────────────────────
-interface UnitRecord {
-    GUID: string;
-    UNIT: string;
-    DESCRIPTION: string;
-    UNITCLASS: number;   // goes to DB
-    ISBASEUNIT: number;  // goes to DB
-}
 
 const UNIT_CLASS_OPTIONS = [
     { value: 0, label: "Quantity" },
@@ -24,14 +16,10 @@ const UNIT_CLASS_OPTIONS = [
 
 const SYSTEM_OF_UNITS_OPTIONS = ["None", "SI", "US", "Imperial"];
 
-// ──────────────────────────────────────────────
-// AUTH
-// ──────────────────────────────────────────────
+
 const LOGGED_IN_USER_ID = localStorage.getItem("userId") ?? "";
 const AUTH_TOKEN = localStorage.getItem("token") ?? "";
-const API_BASE_URL = "http://192.168.0.106"; // 🔁 your port
 
-// const API_BASE_URL = "http://192.168.0.112"; // 🔁 your port
 
 
 const EMPTY_UNIT: UnitRecord = {
@@ -39,6 +27,10 @@ const EMPTY_UNIT: UnitRecord = {
     DESCRIPTION: "",
     UNITCLASS: 0,
     ISBASEUNIT: 0,
+    CREATEDBY: "",
+    MODIFIEDBY: "",
+    DATAAREAID: "",
+    GUID: "",
 };
 
 
@@ -57,9 +49,6 @@ const Toggle: React.FC<{
     </button>
 );
 
-// ──────────────────────────────────────────────
-// MAIN COMPONENT
-// ──────────────────────────────────────────────
 const UnitsPage: React.FC = () => {
 
     const [records, setRecords] = useState<UnitRecord[]>([]);
@@ -85,11 +74,15 @@ const UnitsPage: React.FC = () => {
     useEffect(() => {
         const load = async () => {
             try {
+                const dataareaid = { DATAAREAID: "IND" }; // 🔁 your data area id
                 setPageLoading(true);
                 const res = await fetch(`${API_BASE_URL}/api/Unit/GetAllUnits`, {
+                    method: "POST",
                     headers: {
+                        "accept": "*/*",
                         "Content-Type": "application/json",
                     },
+                    body: JSON.stringify(dataareaid),
                 });
 
                 console.log(res);
@@ -104,6 +97,7 @@ const UnitsPage: React.FC = () => {
                 }
             } catch (err) {
                 setErrorMsg("Could not load units.");
+                console.log(err)
             } finally {
                 setPageLoading(false);
             }
@@ -154,14 +148,15 @@ const UnitsPage: React.FC = () => {
         try {
             if (isNew) {
                 const payload = {
-                    ...formData,
-                    // id: selected.id,
-                    CREATEDBY: "05065350-017F-45F8-AB68-9AC04CBE135F",
-                    MODIFIEDBY: "05065350-017F-45F8-AB68-9AC04CBE135F",
-                    DATAAREAID: "DAT",
+                    UNIT: formData.UNIT,
+                    DESCRIPTION: formData.DESCRIPTION,
+                    UNITCLASS: formData.UNITCLASS,
+                    ISBASEUNIT: formData.ISBASEUNIT,         // number 0/1 as per POST schema
+                    CREATEDBY: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    MODIFIEDBY: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    DATAAREAID: "IND",
                 };
 
-                // console.log("Saving new unit with payload:", payload);
                 const res = await fetch(`${API_BASE_URL}/api/Unit/createUnit`, {
                     method: "POST",
                     headers: {
@@ -170,40 +165,49 @@ const UnitsPage: React.FC = () => {
                     },
                     body: JSON.stringify(payload),
                 });
-                console.log("API response:", res);
-                // if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || "Failed."); }
-                const updated = [...records, { ...formData }];
+
+                if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || "Failed to create."); }
+
+                const created = await res.json().catch(() => ({ ...formData }));
+                const updated = [...records, { ...formData, ...created }];
                 setRecords(updated);
-                setSelected({ ...formData });
+                setSelected({ ...formData, ...created });
                 setSelectedIdx(updated.length - 1);
                 showSuccess(`Unit "${formData.UNIT}" created.`);
+
             } else if (isEditing && selected) {
                 const payload = {
-                    guid: selected.GUID, // 🔥 here instead
-                    ...formData,
-                    MODIFIEDBY: LOGGED_IN_USER_ID,
+                    GUID: selected.GUID,                            // uppercase GUID
+                    UNIT: formData.UNIT,
+                    DESCRIPTION: formData.DESCRIPTION,
+                    UNITCLASS: formData.UNITCLASS,
+                    ISBASEUNIT: formData.ISBASEUNIT === 1,          // convert to boolean for PUT
+                    MODIFIEDBY: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
                 };
 
                 const res = await fetch(`${API_BASE_URL}/api/Unit/updateUnitById`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
+                        "accept": "*/*",
                         "Authorization": `Bearer ${AUTH_TOKEN}`
                     },
                     body: JSON.stringify(payload),
                 });
-                if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || "Failed."); }
+
+                if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || "Failed to update."); }
+
                 const updated = records.map((r, i) => i === selectedIdx ? { ...formData } : r);
                 setRecords(updated);
                 setSelected({ ...formData });
                 showSuccess(`Unit "${formData.UNIT}" updated.`);
             }
+
             setIsNew(false);
             setIsEditing(false);
         } catch (err) {
             setErrorMsg(err instanceof Error ? err.message : "An error occurred.");
-            console.log(err);
-
+            console.error(err);
         } finally {
             setIsLoading(false);
         }
@@ -214,11 +218,18 @@ const UnitsPage: React.FC = () => {
         if (!window.confirm(`Delete unit "${selected.UNIT}"?`)) return;
         setIsLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/Unit/deleteUnit/${selected.GUID}`, {
+            const res = await fetch(`${API_BASE_URL}/api/Unit/deleteUnit`, {
                 method: "DELETE",
-                headers: { "Authorization": `Bearer ${AUTH_TOKEN}` },
+                headers: {
+                    "Content-Type": "application/json",
+                    "accept": "*/*",
+                    "Authorization": `Bearer ${AUTH_TOKEN}`
+                },
+                body: JSON.stringify({ GUID: selected.GUID }),
             });
+
             if (!res.ok) throw new Error("Failed to delete.");
+
             const updated = records.filter((_, i) => i !== selectedIdx);
             setRecords(updated);
             const next = updated[0] ?? null;
@@ -245,13 +256,9 @@ const UnitsPage: React.FC = () => {
 
     const editable = isNew || isEditing;
 
-    // ──────────────────────────────────────────
-    // JSX
-    // ──────────────────────────────────────────
     return (
         <div className="u-shell">
 
-            {/* ══ TOP COMMAND BAR ══ */}
             <div className="u-commandBar">
                 <button className="u-cmd-icon-btn" title="Back">&#8592;</button>
                 <button className="u-cmd-icon-btn u-cmd-hamburger" title="Menu">&#9776;</button>
@@ -271,24 +278,18 @@ const UnitsPage: React.FC = () => {
 
                 <div className="u-cmd-divider" />
 
-                {/* Navigation tabs */}
                 <div className="u-cmd-tabs">
                     <span className="u-cmd-tab u-cmd-tab-active">Options</span>
                     <span className="u-cmd-tab">Unit conversions</span>
-
-
                 </div>
 
-                {/* Right icons */}
                 <div className="u-cmd-right">
                     <button className="u-cmd-icon-btn">&#128269;</button>
                 </div>
             </div>
 
-            {/* ══ BODY ══ */}
             <div className="u-body">
 
-                {/* ══ LEFT SIDEBAR ══ */}
                 <div className="u-sidebar">
                     <div className="u-sidebar-filter">
                         <span className="u-filter-icon">&#128269;</span>
@@ -321,16 +322,12 @@ const UnitsPage: React.FC = () => {
                     </div>
                 </div>
 
-
                 <div className="u-detail">
-
                     <div className="u-std-view">Standard view &#8964;</div>
                     <h1 className="u-detail-title">Units</h1>
-
                     {successMsg && <div className="u-successBar">✓ {successMsg}</div>}
                     {errorMsg && <div className="u-errorBar">⚠ {errorMsg}</div>}
 
-                    {/* Unit + Description top fields */}
                     <div className="u-header-fields">
                         <div className="u-field-group">
                             <label className="u-field-label">Unit</label>
@@ -369,8 +366,6 @@ const UnitsPage: React.FC = () => {
                         <div className="u-section-body">
                             <div className="u-general-grid">
 
-
-                                {/* COL 2 — CLASSIFICATION */}
                                 <div className="u-gen-col">
                                     <div className="u-col-title">CLASSIFICATION</div>
 
@@ -388,19 +383,6 @@ const UnitsPage: React.FC = () => {
                                         </select>
                                     </div>
 
-                                    {/* <div className="u-field-group u-mt">
-                                        <label className="u-field-label">System of units</label>
-                                        <select
-                                            className="u-field-select"
-                                            value={systemOfUnits}
-                                            onChange={e => editable && setSystemOfUnits(e.target.value)}
-                                            disabled={!editable}
-                                        >
-                                            {SYSTEM_OF_UNITS_OPTIONS.map(o => (
-                                                <option key={o} value={o}>{o}</option>
-                                            ))}
-                                        </select>
-                                    </div> */}
                                 </div>
 
                                 <div className="u-gen-col">
@@ -417,23 +399,6 @@ const UnitsPage: React.FC = () => {
                                             <span className="u-toggle-label">{formData.ISBASEUNIT === 1 ? "Yes" : "No"}</span>
                                         </div>
                                     </div>
-
-                                    {/* <div className="u-field-group u-mt">
-                                        <label className="u-field-label">System unit</label>
-                                        <div className="u-toggle-row">
-                                            <Toggle
-                                                value={systemUnit}
-                                                onChange={() => editable && setSystemUnit(v => !v)}
-                                                disabled={!editable}
-                                            />
-                                            <span className="u-toggle-label">{systemUnit ? "Yes" : "No"}</span>
-                                        </div>
-                                    </div> */}
-
-
-
-
-
                                 </div>
 
                             </div>

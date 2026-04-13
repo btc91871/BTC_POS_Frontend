@@ -6,6 +6,7 @@ import { ENUM_API } from "../apiRoutes.ts";
 
 
 interface EnumRecord {
+    GUID: string;
     ENUMNAME: string;
     MEMBERNAME: string;
     VALUE: number;
@@ -45,7 +46,7 @@ const EnumsPage: React.FC = () => {
                 const res = await fetch(ENUM_API.GET_ENUMS);
                 if (!res.ok) throw new Error("Failed to fetch enums.");
                 const data = await res.json();
-                setRecords(Array.isArray(data) ? data : data.Data ?? []); // handles wrapped response
+                setRecords(Array.isArray(data) ? data : data.Data ?? []);
             } catch (err) {
                 setErrorMsg("Could not load enums. Please refresh.");
                 console.error(err);
@@ -207,7 +208,9 @@ const EnumsPage: React.FC = () => {
                     "Content-Type": "application/json",
                     "accept": "*/*",
                 },
-                body: JSON.stringify(row),
+                body: JSON.stringify({
+                    request: row
+                }),
             });
 
             if (!res.ok) {
@@ -215,7 +218,7 @@ const EnumsPage: React.FC = () => {
                 throw new Error(e.message || `Failed to delete "${row.ENUMNAME}"`);
             }
 
-            setRecords(prev => prev.filter((_, i) => i !== index));
+            setRecords(prev => prev.filter(r => r.Guid !== row.Guid));
             showSuccess(`Enum "${row.ENUMNAME}" deleted.`);
 
         } catch (err) {

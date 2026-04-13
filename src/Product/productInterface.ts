@@ -59,3 +59,14 @@ export interface StyleGroupLine {
     MODIFIEDBY: string;
 }
 
+export interface UnitRecord {
+    GUID: string;
+    UNIT: string;
+    DATAAREAID: string;
+    DESCRIPTION: string;
+    UNITCLASS: number;
+    ISBASEUNIT: number;
+    MODIFIEDBY: string;
+    CREATEDBY: string;
+
+}

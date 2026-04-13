@@ -45,8 +45,6 @@ const Sizegroup: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-    // FIX 2: Derive `selected` by finding the group whose GUID matches.
-    // Before: groups[selectedGroupIdx] — broke when filtered list was used.
     const selected = groups.find(g => g.Guid === selectedGuid) ?? null;
     const displayGroup = isEditing && draft ? draft : selected;
 
@@ -85,8 +83,7 @@ const Sizegroup: React.FC = () => {
 
             setGroups(list);
 
-            // FIX 4: After fetch keep current selection if GUID still exists,
-            // otherwise auto-select the first item.
+
             setSelectedGuid(prev => {
                 const stillExists = list.some(g => g.Guid === prev);
                 return stillExists ? prev : (list[0]?.Guid ?? "");
@@ -273,7 +270,7 @@ const Sizegroup: React.FC = () => {
         }
 
         if (draft?.Guid) {
-            // Group already exists on server → PUT with existing lines + new line
+
             const updatedLines = [...(draft.Lines ?? []), { ...newLine }];
             setLoading(true);
             setError(null);

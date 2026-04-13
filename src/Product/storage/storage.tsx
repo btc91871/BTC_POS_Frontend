@@ -1,34 +1,114 @@
 import React, { useState, useEffect } from "react";
 import "./storage.css";
 
+// ──────────────────────────────────────────────
+// INTERFACES — matching real API GET response
+// ──────────────────────────────────────────────
 
-interface StorageDimGroupRecord {
-    storagedimgroupname: string;
-    storagedimgroupdescription: string;
-    createdby: string;
-    modifiedby: string;
+interface EnumDetail {
+    Guid: string;
+    ENUMNAME: string;
+    MEMBERNAME: string;
+    VALUE: number;
+}
+
+interface Line {
+    Guid: string;
+    STORAGEDIMENSIONGROUPID: string;
+    ENUMVALUE: number;
+    ISACTIVE: boolean;
+    ISBLOTRECEIPTALLOWED: boolean;
+    ISBLANKISSUEALLOWED: boolean;
+    ISPHYSICALINVENTORY: boolean;
+    ISFINANCIALINVENTORY: boolean;
+    ISCOVERAGEPLAN: boolean;
+    ISFORPURCHASEPRICES: boolean;
+    ISFORSALESPRICES: boolean;
+    ISTRANSFER: boolean;
+    DISPLAYORDER: number;
+    DATAAREAID: string;
+    CREATEDBY: string;
+    CREATEDDATETIME: string;
+    MODIFIEDBY: string;
+    MODIFIEDDATETIME: string;
+    EnumDetail: EnumDetail;
+}
+
+interface StorageGroup {
+    Guid: string;
+    STORAGEDIMGROUPNAME: string;
+    STORAGEDIMGROUPDESC: string;
+    DATAAREAID: string;
+    CREATEDBY: string;
+    CREATEDDATETIME: string;
+    MODIFIEDBY: string;
+    MODIFIEDDATETIME: string;
+    Lines: Line[];
+}
+
+interface CreateGroupPayload {
+    STORAGEDIMGROUPNAME: string;
+    STORAGEDIMGROUPDESC: string;
+    DATAAREAID: string;
+    CREATEDBY: string;
+    MODIFIEDBY: string;
+    Lines: {
+        NAME: number;
+        ISACTIVE: boolean;
+        ISBLOTRECEIPTALLOWED: boolean;
+        ISBLANKISSUEALLOWED: boolean;
+        ISPHYSICALINVENTORY: boolean;
+        ISFINANCIALINVENTORY: boolean;
+        ISCOVERAGEPLAN: boolean;
+        ISFORPURCHASEPRICES: boolean;
+        ISFORSALESPRICES: boolean;
+        ISTRANSFER: boolean;
+        DISPLAYORDER: number;
+        DATAAREAID: string;
+    }[];
 }
 
 // ──────────────────────────────────────────────
-// AUTH — auto from login
+// CONSTANTS
 // ──────────────────────────────────────────────
-const LOGGED_IN_USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
-const API_BASE_URL = "http://192.168.0.102";
 
-const EMPTY: StorageDimGroupRecord = {
-    storagedimgroupname: "",
-    storagedimgroupdescription: "",
-    createdby: LOGGED_IN_USER_ID,
-    modifiedby: LOGGED_IN_USER_ID,
+const LOGGED_IN_USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
+const API_BASE_URL = "http://192.168.0.104";
+const DATAAREAID = "IND";
+
+const EMPTY_GROUP: StorageGroup = {
+    Guid: "",
+    STORAGEDIMGROUPNAME: "",
+    STORAGEDIMGROUPDESC: "",
+    DATAAREAID: DATAAREAID,
+    CREATEDBY: LOGGED_IN_USER_ID,
+    CREATEDDATETIME: "",
+    MODIFIEDBY: LOGGED_IN_USER_ID,
+    MODIFIEDDATETIME: "",
+    Lines: [],
 };
 
+const BOOL_COLUMNS: { key: keyof Line; label: string }[] = [
+    { key: "ISACTIVE", label: "Active" },
+    { key: "ISBLOTRECEIPTALLOWED", label: "Blot Receipt" },
+    { key: "ISBLANKISSUEALLOWED", label: "Blank Issue" },
+    { key: "ISPHYSICALINVENTORY", label: "Physical Inv." },
+    { key: "ISFINANCIALINVENTORY", label: "Financial Inv." },
+    { key: "ISCOVERAGEPLAN", label: "Coverage Plan" },
+    { key: "ISFORPURCHASEPRICES", label: "Purchase Prices" },
+    { key: "ISFORSALESPRICES", label: "Sales Prices" },
+    { key: "ISTRANSFER", label: "Transfer" },
+];
+
+// ──────────────────────────────────────────────
+// COMPONENT
+// ──────────────────────────────────────────────
 
 const StorageDimGroupPage: React.FC = () => {
-
-    const [records, setRecords] = useState<StorageDimGroupRecord[]>([]);
-    const [selected, setSelected] = useState<StorageDimGroupRecord | null>(null);
+    const [records, setRecords] = useState<StorageGroup[]>([]);
+    const [selected, setSelected] = useState<StorageGroup | null>(null);
     const [selectedIdx, setSelectedIdx] = useState<number>(-1);
-    const [formData, setFormData] = useState<StorageDimGroupRecord>({ ...EMPTY });
+    const [formData, setFormData] = useState<StorageGroup>({ ...EMPTY_GROUP });
     const [filterText, setFilterText] = useState<string>("");
     const [isNew, setIsNew] = useState<boolean>(false);
     const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -37,67 +117,90 @@ const StorageDimGroupPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [pageLoading, setPageLoading] = useState<boolean>(true);
 
-
     useEffect(() => {
-        const load = async () => {
-            try {
-                setPageLoading(true);
-                const res = await fetch(`${API_BASE_URL}/api/StorageDimension/getAllStorageDimensionGroups`, {
-                    headers: { "accept": "*/*" },
-                });
-                if (!res.ok) throw new Error("Failed to fetch.");
-                const data: StorageDimGroupRecord[] = await res.json();
-                setRecords(data);
-                if (data.length > 0) {
-                    setSelected(data[0]);
-                    setSelectedIdx(0);
-                    setFormData({ ...data[0] });
-                }
-            } catch (err) {
-                setErrorMsg("Could not load records. Please refresh.");
-                console.error(err);
-            } finally {
-                setPageLoading(false);
-            }
-        };
-        load();
+        loadRecords();
     }, []);
 
+    // ── GET all ──
+    const loadRecords = async () => {
+        try {
+            setPageLoading(true);
+            setErrorMsg("");
+            const res = await fetch(
+                `${API_BASE_URL}/api/StorageDimension/GetAllStorageDimesion/${DATAAREAID}`,
+                { headers: { accept: "*/*" } }
+            );
+            if (!res.ok) throw new Error(`Server error: ${res.status}`);
+            const data: StorageGroup[] = await res.json();
+            setRecords(data);
+            if (data.length > 0) {
+                setSelected(data[0]);
+                setSelectedIdx(0);
+                setFormData({ ...data[0], Lines: [...data[0].Lines] });
+            }
+        } catch (err) {
+            setErrorMsg("Could not load records. Check network and refresh.");
+            console.error("GET error:", err);
+        } finally {
+            setPageLoading(false);
+        }
+    };
 
-
-    const handleSelect = (item: StorageDimGroupRecord, idx: number) => {
+    const handleSelect = (item: StorageGroup, idx: number) => {
         if (isNew || isEditing) return;
         setSelected(item);
         setSelectedIdx(idx);
-        setFormData({ ...item });
+        setFormData({ ...item, Lines: [...item.Lines] });
         setErrorMsg("");
+        setSuccessMsg("");
     };
 
-    const handleChange = (field: keyof StorageDimGroupRecord, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+    const handleChange = (
+        field: "STORAGEDIMGROUPNAME" | "STORAGEDIMGROUPDESC" | "DATAAREAID",
+        value: string
+    ) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
     };
 
-    // ── + New ──
+    const handleLineToggle = (lineIdx: number, field: keyof Line) => {
+        if (!isEditing && !isNew) return;
+        setFormData((prev) => ({
+            ...prev,
+            Lines: prev.Lines.map((l, i) =>
+                i === lineIdx ? { ...l, [field]: !(l[field] as boolean) } : l
+            ),
+        }));
+    };
+
+    const handleLineOrderChange = (lineIdx: number, value: string) => {
+        setFormData((prev) => ({
+            ...prev,
+            Lines: prev.Lines.map((l, i) =>
+                i === lineIdx ? { ...l, DISPLAYORDER: parseInt(value) || 0 } : l
+            ),
+        }));
+    };
+
     const handleNew = () => {
         setIsNew(true);
         setIsEditing(false);
         setSelected(null);
         setSelectedIdx(-1);
-        setFormData({ ...EMPTY });
+        setFormData({ ...EMPTY_GROUP });
         setErrorMsg("");
+        setSuccessMsg("");
     };
 
-    // ── Cancel ──
     const handleCancel = () => {
         setIsNew(false);
         setIsEditing(false);
-        if (selected) setFormData({ ...selected });
+        if (selected) setFormData({ ...selected, Lines: [...selected.Lines] });
         setErrorMsg("");
     };
 
-    // ── Save (POST or PUT) ──
+    // ── POST / PUT ──
     const handleSave = async () => {
-        if (!formData.storagedimgroupname.trim()) {
+        if (!formData.STORAGEDIMGROUPNAME.trim()) {
             setErrorMsg("Name is required.");
             return;
         }
@@ -106,48 +209,71 @@ const StorageDimGroupPage: React.FC = () => {
 
         try {
             if (isNew) {
-                const payload: StorageDimGroupRecord = {
-                    ...formData,
-                    createdby: LOGGED_IN_USER_ID,
-                    modifiedby: LOGGED_IN_USER_ID,
+                const payload: CreateGroupPayload = {
+                    STORAGEDIMGROUPNAME: formData.STORAGEDIMGROUPNAME,
+                    STORAGEDIMGROUPDESC: formData.STORAGEDIMGROUPDESC,
+                    DATAAREAID: formData.DATAAREAID || DATAAREAID,
+                    CREATEDBY: LOGGED_IN_USER_ID,
+                    MODIFIEDBY: LOGGED_IN_USER_ID,
+                    Lines: formData.Lines.map((l) => ({
+                        NAME: l.ENUMVALUE,
+                        ISACTIVE: l.ISACTIVE,
+                        ISBLOTRECEIPTALLOWED: l.ISBLOTRECEIPTALLOWED,
+                        ISBLANKISSUEALLOWED: l.ISBLANKISSUEALLOWED,
+                        ISPHYSICALINVENTORY: l.ISPHYSICALINVENTORY,
+                        ISFINANCIALINVENTORY: l.ISFINANCIALINVENTORY,
+                        ISCOVERAGEPLAN: l.ISCOVERAGEPLAN,
+                        ISFORPURCHASEPRICES: l.ISFORPURCHASEPRICES,
+                        ISFORSALESPRICES: l.ISFORSALESPRICES,
+                        ISTRANSFER: l.ISTRANSFER,
+                        DISPLAYORDER: l.DISPLAYORDER,
+                        DATAAREAID: l.DATAAREAID || DATAAREAID,
+                    })),
                 };
-                const res = await fetch(`${API_BASE_URL}/api/TrackingDimension/createTrackingDimen`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "accept": "*/*" },
-                    body: JSON.stringify(payload),
-                })
-
-
-
-                console.log("API RESPONSE:", payload);
-
-                if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || "Failed to create."); }
-                const updated = [...records, { ...formData }];
-                setRecords(updated);
-                setSelected({ ...formData });
-                setSelectedIdx(updated.length - 1);
-                showSuccess(`"${formData.storagedimgroupname}" created.`);
+                console.log("POST payload:", payload);
+                const res = await fetch(
+                    `${API_BASE_URL}/api/StorageDimension/CreateStorageDimesion`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", accept: "*/*" },
+                        body: JSON.stringify(payload),
+                    }
+                );
+                if (!res.ok) {
+                    const e = await res.json().catch(() => ({}));
+                    throw new Error((e as any).message || `Failed to create. Status: ${res.status}`);
+                }
+                await loadRecords();
+                showSuccess(`"${formData.STORAGEDIMGROUPNAME}" created.`);
 
             } else if (isEditing && selected) {
-                const payload: StorageDimGroupRecord = {
-                    ...formData,
-                    modifiedby: LOGGED_IN_USER_ID,  // ✅ auto from login
+                const payload = {
+                    GUID: formData.Guid,
+                    STORAGEDIMGROUPNAME: formData.STORAGEDIMGROUPNAME,
+                    STORAGEDIMGROUPDESC: formData.STORAGEDIMGROUPDESC,
+                    DATAAREAID: formData.DATAAREAID,
+                    MODIFIEDBY: LOGGED_IN_USER_ID,
+                    Lines: formData.Lines,
                 };
-                const res = await fetch(`${API_BASE_URL}/api/StorageDimGroup/update`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json", "accept": "*/*" },
-                    body: JSON.stringify(payload),
-                });
-                if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || "Failed to update."); }
-                const updated = records.map((r, i) => i === selectedIdx ? { ...formData } : r);
-                setRecords(updated);
-                setSelected({ ...formData });
-                showSuccess(`"${formData.storagedimgroupname}" updated.`);
+                console.log("PUT payload:", payload);
+                const res = await fetch(
+                    `${API_BASE_URL}/api/StorageDimension/UpdateStorageDimesion`,
+                    {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json", accept: "*/*" },
+                        body: JSON.stringify(payload),
+                    }
+                );
+                if (!res.ok) {
+                    const e = await res.json().catch(() => ({}));
+                    throw new Error((e as any).message || `Failed to update. Status: ${res.status}`);
+                }
+                await loadRecords();
+                showSuccess(`"${formData.STORAGEDIMGROUPNAME}" updated.`);
             }
 
             setIsNew(false);
             setIsEditing(false);
-
         } catch (err) {
             setErrorMsg(err instanceof Error ? err.message : "An error occurred.");
         } finally {
@@ -155,26 +281,60 @@ const StorageDimGroupPage: React.FC = () => {
         }
     };
 
-    // ── Delete ──
+    // ── DELETE group ──
     const handleDelete = async () => {
         if (!selected || isNew) return;
-        if (!window.confirm(`Delete "${selected.storagedimgroupname}"?`)) return;
+        if (!window.confirm(`Delete "${selected.STORAGEDIMGROUPNAME}"?`)) return;
         setIsLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/StorageDimension/DeleteStorageDimensionById/${encodeURIComponent(selected.storagedimgroupname)}`, {
-                method: "DELETE",
-                headers: { "accept": "*/*" },
-            });
-            if (!res.ok) throw new Error("Failed to delete.");
+            const res = await fetch(
+                `${API_BASE_URL}/api/StorageDimension/DeleteStorageDimesion`,
+                {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json", accept: "*/*" },
+                    body: JSON.stringify({ GUID: selected.Guid }),
+                }
+            );
+            if (!res.ok) throw new Error(`Failed to delete. Status: ${res.status}`);
             const updated = records.filter((_, i) => i !== selectedIdx);
             setRecords(updated);
             const next = updated[0] ?? null;
             setSelected(next);
             setSelectedIdx(next ? 0 : -1);
-            setFormData(next ?? { ...EMPTY });
+            setFormData(next ? { ...next, Lines: [...next.Lines] } : { ...EMPTY_GROUP });
             showSuccess("Record deleted.");
         } catch (err) {
             setErrorMsg(err instanceof Error ? err.message : "Failed to delete.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // ── DELETE line ──
+    const handleDeleteLine = async (line: Line, lineIdx: number) => {
+        if (!window.confirm(`Delete line "${line.EnumDetail?.MEMBERNAME ?? line.Guid}"?`))
+            return;
+        setIsLoading(true);
+        try {
+            const res = await fetch(
+                `${API_BASE_URL}/api/StorageDimension/DeleteStorageDimesionLine`,
+                {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json", accept: "*/*" },
+                    body: JSON.stringify({ GUID: line.Guid, DATAAREAID: line.DATAAREAID }),
+                }
+            );
+            if (!res.ok) throw new Error(`Failed to delete line. Status: ${res.status}`);
+            const updatedLines = formData.Lines.filter((_, i) => i !== lineIdx);
+            const updatedForm = { ...formData, Lines: updatedLines };
+            setFormData(updatedForm);
+            setSelected(updatedForm);
+            setRecords((prev) =>
+                prev.map((r, i) => (i === selectedIdx ? updatedForm : r))
+            );
+            showSuccess("Line deleted.");
+        } catch (err) {
+            setErrorMsg(err instanceof Error ? err.message : "Failed to delete line.");
         } finally {
             setIsLoading(false);
         }
@@ -185,10 +345,12 @@ const StorageDimGroupPage: React.FC = () => {
         setTimeout(() => setSuccessMsg(""), 3000);
     };
 
-    const filteredRecords = records.filter(r =>
-        r.storagedimgroupname.toLowerCase().includes(filterText.toLowerCase()) ||
-        r.storagedimgroupdescription.toLowerCase().includes(filterText.toLowerCase())
-    );
+    // // ✅ Filter restored
+    // const filteredRecords = records.filter(
+    //     (r) =>
+    //         r.STORAGEDIMGROUPNAME.toLowerCase().includes(filterText.toLowerCase()) ||
+    //         r.STORAGEDIMGROUPDESC.toLowerCase().includes(filterText.toLowerCase())
+    // );
 
     const editable = isNew || isEditing;
 
@@ -208,10 +370,18 @@ const StorageDimGroupPage: React.FC = () => {
                     >
                         <span>&#128190;</span> Save
                     </button>
-                    <button className="sdg-cmd-btn" onClick={handleNew} disabled={isLoading}>
+                    <button
+                        className="sdg-cmd-btn"
+                        onClick={handleNew}
+                        disabled={isLoading || isNew || isEditing}
+                    >
                         <span>+</span> New
                     </button>
-                    <button className="sdg-cmd-btn" onClick={handleDelete} disabled={isLoading || !selected || isNew}>
+                    <button
+                        className="sdg-cmd-btn"
+                        onClick={handleDelete}
+                        disabled={isLoading || !selected || isNew || isEditing}
+                    >
                         <span>🗑</span> Delete
                     </button>
                 </div>
@@ -238,7 +408,7 @@ const StorageDimGroupPage: React.FC = () => {
                             type="text"
                             placeholder="Filter"
                             value={filterText}
-                            onChange={e => setFilterText(e.target.value)}
+                            onChange={(e) => setFilterText(e.target.value)}
                             className="sdg-filter-input"
                         />
                     </div>
@@ -248,71 +418,89 @@ const StorageDimGroupPage: React.FC = () => {
 
                         {isNew && (
                             <div className="sdg-sidebar-item sdg-sidebar-item-active">
-                                <div className="sdg-item-name">{formData.storagedimgroupname || "NEW"}</div>
-                                <div className="sdg-item-desc">{formData.storagedimgroupdescription || "New record"}</div>
+                                <div className="sdg-item-name">
+                                    {formData.STORAGEDIMGROUPNAME || "NEW"}
+                                </div>
+                                <div className="sdg-item-desc">
+                                    {formData.STORAGEDIMGROUPDESC || "New record"}
+                                </div>
                             </div>
                         )}
 
-                        {filteredRecords.map((r, idx) => (
+                        {/* ✅ Sidebar list — restored from commented-out state */}
+                        {/* {filteredRecords.map((r, idx) => (
                             <div
-                                key={idx}
-                                className={`sdg-sidebar-item ${!isNew && selectedIdx === idx ? "sdg-sidebar-item-active" : ""}`}
+                                key={r.Guid || idx}
+                                className={`sdg-sidebar-item ${!isNew && selectedIdx === idx ? "sdg-sidebar-item-active" : ""
+                                    }`}
                                 onClick={() => handleSelect(r, idx)}
                             >
-                                <div className="sdg-item-name">{r.storagedimgroupname}</div>
-                                <div className="sdg-item-desc">{r.storagedimgroupdescription}</div>
+                                <div className="sdg-item-name">{r.STORAGEDIMGROUPNAME}</div>
+                                <div className="sdg-item-desc">{r.STORAGEDIMGROUPDESC}</div>
                             </div>
-                        ))}
+                        ))} */}
                     </div>
                 </div>
 
                 {/* ══ DETAIL PANEL ══ */}
                 <div className="sdg-detail">
-
                     <div className="sdg-std-view">Standard view &#8964;</div>
                     <h1 className="sdg-detail-title">Storage Dimension Groups</h1>
 
-                    {/* Banners */}
                     {successMsg && <div className="sdg-successBar">✓ {successMsg}</div>}
                     {errorMsg && <div className="sdg-errorBar">⚠ {errorMsg}</div>}
 
-                    {/* ── Header fields card ── */}
                     <div className="sdg-header-card">
                         <div className="sdg-header-fields">
 
-                            {/* Name (like "Unit" in screenshot) */}
                             <div className="sdg-field-group">
                                 <label className="sdg-field-label">Name</label>
                                 <input
                                     className={`sdg-field-input sdg-field-short ${editable ? "sdg-active" : ""}`}
-                                    value={formData.storagedimgroupname}
-                                    onChange={e => handleChange("storagedimgroupname", e.target.value)}
-                                    disabled={!editable}
+                                    value={formData.STORAGEDIMGROUPNAME}
+                                    onChange={(e) => handleChange("STORAGEDIMGROUPNAME", e.target.value)}
+                                    disabled={!isNew} // Name only editable on create
                                     placeholder="Group name"
                                 />
                             </div>
 
-                            {/* Description (like "Description" in screenshot) */}
                             <div className="sdg-field-group sdg-field-group-wide">
                                 <label className="sdg-field-label">Description</label>
                                 <input
                                     className={`sdg-field-input ${editable ? "sdg-active" : ""}`}
-                                    value={formData.storagedimgroupdescription}
-                                    onChange={e => handleChange("storagedimgroupdescription", e.target.value)}
+                                    value={formData.STORAGEDIMGROUPDESC}
+                                    onChange={(e) => handleChange("STORAGEDIMGROUPDESC", e.target.value)}
                                     disabled={!editable}
                                     placeholder="Description"
                                 />
                             </div>
 
-                            {/* Edit / Cancel button — exactly like screenshot */}
+                            <div className="sdg-field-group">
+                                <label className="sdg-field-label">Data Area ID</label>
+                                <input
+                                    className={`sdg-field-input sdg-field-short ${editable ? "sdg-active" : ""}`}
+                                    value={formData.DATAAREAID}
+                                    onChange={(e) => handleChange("DATAAREAID", e.target.value)}
+                                    disabled={!editable}
+                                    placeholder="e.g. IND"
+                                />
+                            </div>
+
                             <div className="sdg-header-actions">
                                 {!isNew && !isEditing && selected && (
-                                    <button className="sdg-btn-edit" onClick={() => setIsEditing(true)}>
-                                        &#8212; Edit
+                                    <button
+                                        className="sdg-btn-edit"
+                                        onClick={() => setIsEditing(true)}
+                                    >
+                                        &#9998; Edit
                                     </button>
                                 )}
                                 {(isNew || isEditing) && (
-                                    <button className="sdg-btn-secondary" onClick={handleCancel} disabled={isLoading}>
+                                    <button
+                                        className="sdg-btn-secondary"
+                                        onClick={handleCancel}
+                                        disabled={isLoading}
+                                    >
                                         Cancel
                                     </button>
                                 )}
@@ -321,8 +509,90 @@ const StorageDimGroupPage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* ══ GENERAL SECTION ══ */}
+                    {/* ══ LINES TABLE ══ */}
+                    {(selected || isNew) && (
+                        <div className="sdg-lines-section">
+                            <div className="sdg-lines-header">
+                                <h2 className="sdg-lines-title">Lines</h2>
+                            </div>
 
+                            <div className="sdg-lines-table-wrapper">
+                                <table className="sdg-lines-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Dimension</th>
+                                            <th>Enum Value</th>
+                                            {BOOL_COLUMNS.map((c) => (
+                                                <th key={String(c.key)}>{c.label}</th>
+                                            ))}
+                                            <th>Display Order</th>
+                                            <th>Data Area</th>
+                                            {isEditing && <th>Action</th>}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {formData.Lines.length === 0 ? (
+                                            <tr>
+                                                <td
+                                                    colSpan={BOOL_COLUMNS.length + 4 + (isEditing ? 1 : 0)}
+                                                    className="sdg-no-lines"
+                                                >
+                                                    No lines.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            formData.Lines.map((line, li) => (
+                                                <tr key={line.Guid || li}>
+                                                    <td className="sdg-line-name">
+                                                        {line.EnumDetail?.MEMBERNAME ?? "—"}
+                                                    </td>
+                                                    <td>{line.ENUMVALUE}</td>
+                                                    {BOOL_COLUMNS.map((c) => (
+                                                        <td key={String(c.key)} className="sdg-bool-cell">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={!!(line[c.key] as boolean)}
+                                                                onChange={() => handleLineToggle(li, c.key)}
+                                                                disabled={!isEditing}
+                                                                className="sdg-checkbox"
+                                                            />
+                                                        </td>
+                                                    ))}
+                                                    <td>
+                                                        {isEditing ? (
+                                                            <input
+                                                                type="number"
+                                                                className="sdg-field-input sdg-field-order"
+                                                                value={line.DISPLAYORDER}
+                                                                onChange={(e) =>
+                                                                    handleLineOrderChange(li, e.target.value)
+                                                                }
+                                                            />
+                                                        ) : (
+                                                            line.DISPLAYORDER
+                                                        )}
+                                                    </td>
+                                                    <td>{line.DATAAREAID}</td>
+                                                    {isEditing && (
+                                                        <td>
+                                                            <button
+                                                                className="sdg-line-delete-btn"
+                                                                onClick={() => handleDeleteLine(line, li)}
+                                                                disabled={isLoading}
+                                                                title="Delete line"
+                                                            >
+                                                                🗑
+                                                            </button>
+                                                        </td>
+                                                    )}
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
 
                 </div>
             </div>

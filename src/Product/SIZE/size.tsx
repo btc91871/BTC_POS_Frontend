@@ -180,9 +180,21 @@ const SizePage: React.FC = () => {
                 const errData = await response.json().catch(() => ({}));
                 throw new Error(errData.message || `Server error: ${response.status}`);
             }
+            const created = await response.json();
 
-            // Add to table and clear the new row
-            setRecords((prev) => [...prev, newRow]);
+            // Map server response to your SizeRecord shape
+            const savedRecord: SizeRecord = {
+                GUID: created.GUID ?? created.guid ?? created.Id ?? created.id ?? "",
+                SIZE: created.SIZE ?? created.size ?? newRow.SIZE,
+                SIZENAME: created.SIZENAME ?? created.sizename ?? newRow.SIZENAME,
+                SIZEDESCRIPTION: created.SIZEDESCRIPTION ?? created.sizedescription ?? newRow.SIZEDESCRIPTION,
+                SIZEDISPLAYORDER: created.SIZEDISPLAYORDER ?? created.sizedisplayorder ?? newRow.SIZEDISPLAYORDER,
+                SIZEREFINERGROUP: created.SIZEREFINERGROUP ?? created.sizerefinergroup ?? newRow.SIZEREFINERGROUP,
+                hexcode: created.hexcode ?? "",
+                url: created.url ?? "",
+            };
+
+            setRecords((prev) => [...prev, savedRecord]);
             setNewRow(null);
             showSuccess(`Size "${newRow.SIZE}" saved successfully.`);
 
@@ -216,16 +228,24 @@ const SizePage: React.FC = () => {
         setRowError("");
     };
 
-    const handleEditRowChange = (index: number, field: keyof SizeRecord, value: string): void => {
-        const updated = [...editedRecords];
-        updated[index] = {
-            ...updated[index],
-            [field]: field === "SIZEDISPLAYORDER" ? Number(value) : value,
-        };
-        setEditedRecords(updated);
+    // const handleEditRowChange = (index: number, field: keyof SizeRecord, value: string): void => {
+    //     const updated = [...editedRecords];
+    //     updated[index] = {
+    //         ...updated[index],
+    //         [field]: field === "SIZEDISPLAYORDER" ? Number(value) : value,
+    //     };
+    //     setEditedRecords(updated);
+    // };
+
+    const handleEditRowChange = (guid: string, field: keyof SizeRecord, value: string): void => {
+        setEditedRecords(prev =>
+            prev.map(r =>
+                r.GUID === guid
+                    ? { ...r, [field]: field === "SIZEDISPLAYORDER" ? Number(value) : value }
+                    : r
+            )
+        );
     };
-
-
 
 
     const handleSaveEdit = async (): Promise<void> => {
@@ -445,13 +465,13 @@ const SizePage: React.FC = () => {
                         {/* Existing records rendered via StyleForm */}
                         {displayedRecords.map((row, index) =>
                             isEditMode ? (
-                                <tr key={index} className="tr">
-                                    <td className="td"><input value={editedRecords[index]?.SIZE ?? ""} onChange={(e) => handleEditRowChange(index, "SIZE", e.target.value)} /></td>
-                                    <td className="td"><input type="number" value={editedRecords[index]?.SIZEDISPLAYORDER ?? 0} onChange={(e) => handleEditRowChange(index, "SIZEDISPLAYORDER", e.target.value)} /></td>
-                                    <td className="td"><input value={editedRecords[index]?.SIZEREFINERGROUP ?? ""} onChange={(e) => handleEditRowChange(index, "SIZEREFINERGROUP", e.target.value)} /></td>
+                                <tr key={row.GUID} className="tr">
+                                    <td className="td"><input value={editedRecords.find(r => r.GUID === row.GUID)?.SIZE ?? ""} onChange={(e) => handleEditRowChange(row.GUID, "SIZE", e.target.value)} /></td>
+                                    <td className="td"><input type="number" value={editedRecords.find(r => r.GUID === row.GUID)?.SIZEDISPLAYORDER ?? 0} onChange={(e) => handleEditRowChange(row.GUID, "SIZEDISPLAYORDER", e.target.value)} /></td>
+                                    <td className="td"><input value={editedRecords.find(r => r.GUID === row.GUID)?.SIZEREFINERGROUP ?? ""} onChange={(e) => handleEditRowChange(row.GUID, "SIZEREFINERGROUP", e.target.value)} /></td>
                                 </tr>
                             ) : (
-                                <tr key={index} className="tr">
+                                <tr key={row.GUID} className="tr">
                                     <td className="td">{row.SIZE}</td>
                                     <td className="td">{row.SIZEDISPLAYORDER}</td>
                                     <td className="td">{row.SIZEREFINERGROUP}</td>
