@@ -70,3 +70,41 @@ export interface UnitRecord {
     CREATEDBY: string;
 
 }
+
+
+
+
+export interface StorageLine {
+    Guid: string;
+    STORAGEDIMENSIONGROUPID: string;
+    ENUMVALUE: number;        // the number that identifies the dimension (Site=0, WH=1 …)
+    ISACTIVE: boolean;
+    ISBLOTRECEIPTALLOWED: boolean;
+    ISBLANKISSUEALLOWED: boolean;
+    ISPHYSICALINVENTORY: boolean;
+    ISFINANCIALINVENTORY: boolean;
+    ISCOVERAGEPLAN: boolean;
+    ISFORPURCHASEPRICES: boolean;
+    ISFORSALESPRICES: boolean;
+    ISTRANSFER: boolean;
+    DISPLAYORDER: number;
+    DATAAREAID: string;
+    CREATEDBY: string;
+    CREATEDDATETIME: string;
+    MODIFIEDBY: string;
+    MODIFIEDDATETIME: string;
+    EnumDetail: { MEMBERNAME: string; VALUE: number } | null;
+}
+
+// The "header" — one Storage Dimension Group
+export interface StorageGroup {
+    Guid: string;
+    STORAGEDIMGROUPNAME: string;
+    STORAGEDIMGROUPDESC: string;
+    DATAAREAID: string;
+    CREATEDBY: string;
+    CREATEDDATETIME: string;
+    MODIFIEDBY: string;
+    MODIFIEDDATETIME: string;
+    Lines: StorageLine[];
+}

@@ -1,5 +1,5 @@
 // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-export const API_BASE_URL: string = "http://192.168.0.104";
+export const API_BASE_URL: string = "http://192.168.0.106";
 
 
 //  SIZE PAGE
@@ -78,3 +78,12 @@ export const UNIT_API = {
     DELETE_UNIT: `${API_BASE_URL}/api/Unit/DeleteUnit`,
 }
 
+
+export const Storage_API = {
+    GET_ALL: `${API_BASE_URL}/api/StorageDimension/GetAllStorageDimesion`,
+    GET_BY_ID: `${API_BASE_URL}/api/StorageDimension/GetStorageDimesionById`,
+    CREATE: `${API_BASE_URL}/api/StorageDimension/createStorageDimensionGroup`,
+    UPDATE: `${API_BASE_URL}/api/StorageDimension/updateStorageDimensionById`,
+    DELETE_GRP: `${API_BASE_URL}/api/StorageDimension/DeleteStorageDimensionById`,
+    DELETE_LINE: `${API_BASE_URL}/api/StorageDimension/DeleteStorageDimensionLineById`,
+};

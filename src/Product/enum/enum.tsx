@@ -1,9 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import "./enum.css";
-import { API_BASE_URL } from "../apiRoutes";
 import { ENUM_API } from "../apiRoutes.ts";
-
-
 
 interface EnumRecord {
     GUID: string;
@@ -14,12 +11,10 @@ interface EnumRecord {
 }
 
 
-
-
 const LOGGED_IN_USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
 const AUTH_TOKEN = "fake-token-for-now";
 const DATA_AREA_ID = "DAT";
-// const API_BASE_URL = "http://192.168.0.113"; // 🔁 your port
+
 
 const EnumsPage: React.FC = () => {
 
